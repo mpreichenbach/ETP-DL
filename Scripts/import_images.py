@@ -1,16 +1,31 @@
 import os
 import numpy as np
-import pandas as pd
 import random
+import pandas as pd
 from PIL import Image
+from sklearn import preprocessing
 
-#####
-# Store training data in numpy arrays
-#####
-data_path = "Data/DeepGlobe Land Cover Dataset/train"
+data_path = "Data/DeepGlobe Land Cover Dataset"
 
 sats = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG sat tiles.npy')
 masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
+
+#####
+# Get class info
+#####
+
+class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
+# Get class names
+class_names = class_df['name'].tolist()
+# Get class RGB values
+class_rgb_values = class_df[['r', 'g', 'b']].values.tolist()
+
+#####
+# Perform a one-hot encoding of the land-cover classes
+scaled_rgb = np.asarray(class_df[['r', 'g', 'b']].values / 255, dtype=np.float32)
+
+
+
 
 def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
@@ -109,35 +124,3 @@ def save_tiles(sats, masks, sat_path, mask_path):
 
         sat_im.save(sat_path + '/' + str(i) + '.png')
         mask_im.save(mask_path + '/' + str(i) + '.png')
-
-
-def view(x, y, n=5):
-    """View 5 random satellite tiles with their mask counterparts, and with a class legend"""
-    # axes = []
-    # fig = plt.figure()
-
-    # for a in range(n):
-    #     pair = random.randint(0, len(x))
-    #     sat = Image.fromarray(np.uint8(x[pair] * 255))
-    #     mask = Image.fromarray(np.uint8(y[pair] * 255))
-    #     axes.append(fig.add_subplot(2, n, a + 1))
-    #     axes.append(fig.add_subplot(2, n, a + 6))
-    #     subplot_title = ("Subplot" + str(a))
-    #     axes[-1].set_title(subplot_title)
-    #     plt.imshow(sat)
-    #     plt.imshow(mask)
-    # fig.tight_layout()
-    # plt.show()
-
-#####
-# Get class info
-#####
-
-class_dict = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
-# Get class names
-class_names = class_dict['name'].tolist()
-# Get class RGB values
-class_rgb_values = class_dict[['r','g','b']].values.tolist()
-
-
-
