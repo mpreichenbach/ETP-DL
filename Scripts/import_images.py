@@ -3,12 +3,12 @@ import numpy as np
 import random
 import pandas as pd
 from PIL import Image
-from sklearn import preprocessing
 
 data_path = "Data/DeepGlobe Land Cover Dataset"
 
 sats = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG sat tiles.npy')
 masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
+oh_encoded = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG one-hot encoded tiles.npy')
 
 #####
 # Get class info
@@ -19,12 +19,6 @@ class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
 class_names = class_df['name'].tolist()
 # Get class RGB values
 class_rgb_values = class_df[['r', 'g', 'b']].values.tolist()
-
-#####
-# Perform a one-hot encoding of the land-cover classes
-scaled_rgb = np.asarray(class_df[['r', 'g', 'b']].values / 255, dtype=np.float32)
-
-
 
 
 def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
@@ -124,3 +118,46 @@ def save_tiles(sats, masks, sat_path, mask_path):
 
         sat_im.save(sat_path + '/' + str(i) + '.png')
         mask_im.save(mask_path + '/' + str(i) + '.png')
+
+
+#####
+# Perform a one-hot encoding of the land-cover classes in the masked imagery
+def one_hot(rgb_array, class_df):
+    """This function maps an RGB numpy array to an associated numpy unit vector.
+
+    Args:
+        rgb_array (numpy): an array of all mask imagery, with shape (#tiles, height, width, depth)
+        class_df (data frame): DataFrame with class labels and RGB values in columns (see class_dict.csv above)
+        """
+
+    n_classes = len(class_df)
+    rgb_values = class_df[['r', 'g', 'b']].values.tolist()
+    rgb_list_of_tuples = []
+
+    identity = np.identity(n_classes, dtype=np.float32)
+    one_hot_list = []
+
+    n_tiles = rgb_array.shape[0]
+    tile_height = rgb_array.shape[1]
+    tile_width = rgb_array.shape[2]
+
+    oh_array = np.zeros((n_tiles, tile_height, tile_width, n_classes))
+
+    for rgb in rgb_values:
+        rgb_tuple = tuple(rgb)
+        rgb_list_of_tuples.append(rgb_tuple)
+
+    for row in range(n_classes):
+        one_hot_list.append(tuple(identity[row]))
+
+    rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
+
+    for s in range(n_tiles):
+        if s % 100 == 0:
+            print(str(s) + ' out of ' + str(n_tiles))
+        for h in range(tile_height):
+            for w in range(tile_width):
+                oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
+
+
+    return oh_array
