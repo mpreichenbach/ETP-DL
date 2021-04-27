@@ -123,17 +123,17 @@ def save_tiles(sats, masks, sat_path, mask_path):
 
 #####
 # Perform a one-hot encoding of the land-cover classes in the masked imagery
-def one_hot(rgb_array, class_df):
+def rgb_to_oh(rgb_array, class_df):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
-    (#tiles, height, width, #classes).
+    (#tiles, height, width, #classes). This is the inverse of oh_to_rgb().
 
     Args:
-        rgb_array (numpy): an array of all mask imagery, with shape (#tiles, height, width, depth)
+        rgb_array (ndarray): an array of all mask imagery, with shape (#tiles, height, width, depth)
         class_df (data frame): DataFrame with class labels and RGB values in columns (see class_dict.csv above)
         """
 
     n_classes = len(class_df)
-    rgb_values = class_df[['r', 'g', 'b']].values.tolist()
+    rgb_list = class_df[['r', 'g', 'b']].values.tolist()
     rgb_list_of_tuples = []
 
     identity = np.identity(n_classes, dtype=np.float32)
@@ -145,7 +145,7 @@ def one_hot(rgb_array, class_df):
 
     oh_array = np.zeros((n_tiles, tile_height, tile_width, n_classes))
 
-    for rgb in rgb_values:
+    for rgb in rgb_list:
         rgb_tuple = tuple(rgb)
         rgb_list_of_tuples.append(rgb_tuple)
 
@@ -156,9 +156,50 @@ def one_hot(rgb_array, class_df):
 
     for s in range(n_tiles):
         if s % 100 == 0:
-            print(str(s) + ' out of ' + str(n_tiles))
+            print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
+
+    return oh_array
+
+
+def oh_to_rgb(oh_array, class_df):
+    """This function takes the one-hot encoded array created by rgb_to_oh(), and returns an RGB array. Output will have
+    the shape (#tiles, height, width, 3). This is also the inverse of oh_to_rgb().
+
+    Args:
+        oh_array (ndarray): an array of the one-hot encoded imagery, with shape (#tiles, height, width, #classes)
+        class_df (data frame): DataFrame with class labels and RGB values in columns (see class_dict.csv above)
+        """
+
+    n_classes = len(class_df)
+    rgb_list = class_df[['r', 'g', 'b']].values.tolist()
+    rgb_list_of_tuples = []
+
+    identity = np.identity(n_classes, dtype=np.int8)
+    one_hot_list = []
+
+    n_tiles = oh_array.shape[0]
+    tile_height = oh_array.shape[1]
+    tile_width = oh_array.shape[2]
+
+    rgb_array = np.zeros((n_tiles, tile_height, tile_width, 3))
+
+    for rgb in rgb_list:
+        rgb_tuple = tuple(rgb)
+        rgb_list_of_tuples.append(rgb_tuple)
+
+    for row in range(n_classes):
+        one_hot_list.append(tuple(identity[row]))
+
+    oh_rgb_dict = dict(zip(one_hot_list, rgb_list_of_tuples))
+
+    for s in range(n_tiles):
+        if s % 100 == 0:
+            print(str(s) + ' tiles complete out of ' + str(n_tiles))
+        for h in range(tile_height):
+            for w in range(tile_width):
+                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(oh_array[s, h, w])])
 
     return oh_array
