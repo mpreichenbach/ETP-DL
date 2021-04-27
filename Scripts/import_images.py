@@ -7,8 +7,9 @@ from PIL import Image
 data_path = "Data/DeepGlobe Land Cover Dataset"
 
 sats = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG sat tiles.npy')
-masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
 oh_encoded = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG one-hot encoded tiles.npy')
+
+masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
 
 #####
 # Get class info
@@ -123,7 +124,8 @@ def save_tiles(sats, masks, sat_path, mask_path):
 #####
 # Perform a one-hot encoding of the land-cover classes in the masked imagery
 def one_hot(rgb_array, class_df):
-    """This function maps an RGB numpy array to an associated numpy unit vector.
+    """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
+    (#tiles, height, width, #classes).
 
     Args:
         rgb_array (numpy): an array of all mask imagery, with shape (#tiles, height, width, depth)
@@ -158,6 +160,5 @@ def one_hot(rgb_array, class_df):
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
-
 
     return oh_array
