@@ -3,6 +3,7 @@ import numpy as np
 import random
 import pandas as pd
 from PIL import Image
+from matplotlib import pyplot as plt
 
 data_path = "Data/DeepGlobe Land Cover Dataset"
 
@@ -121,8 +122,6 @@ def save_tiles(sats, masks, sat_path, mask_path):
         mask_im.save(mask_path + '/' + str(i) + '.png')
 
 
-#####
-# Perform a one-hot encoding of the land-cover classes in the masked imagery
 def rgb_to_oh(rgb_array, class_df):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
     (#tiles, height, width, #classes). This is the inverse of oh_to_rgb().
@@ -155,8 +154,8 @@ def rgb_to_oh(rgb_array, class_df):
     rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
 
     for s in range(n_tiles):
-        if s % 100 == 0:
-            print(str(s) + ' complete out of ' + str(n_tiles))
+        # if s % 100 == 0:
+        #     print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
@@ -177,7 +176,7 @@ def oh_to_rgb(oh_array, class_df):
     rgb_list = class_df[['r', 'g', 'b']].values.tolist()
     rgb_list_of_tuples = []
 
-    identity = np.identity(n_classes, dtype=np.int8)
+    identity = np.identity(n_classes)
     one_hot_list = []
 
     n_tiles = oh_array.shape[0]
@@ -196,10 +195,48 @@ def oh_to_rgb(oh_array, class_df):
     oh_rgb_dict = dict(zip(one_hot_list, rgb_list_of_tuples))
 
     for s in range(n_tiles):
-        if s % 100 == 0:
-            print(str(s) + ' tiles complete out of ' + str(n_tiles))
+        # if s % 100 == 0:
+        #     print(str(s) + ' tiles complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
-                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(oh_array[s, h, w])])
+                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(oh_array[s, h, w])]).astype(np.uint8)
 
-    return oh_array
+    return rgb_array
+
+
+def view_tiles(sats, masks, model, seed, class_df, num=5):
+    """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
+    prediction. Note that the images are selected randomly from the sats array.
+
+    Args:
+        sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
+        masks (ndarray): the associated collection of ground-truth masks,
+        model (tf.keras.model): the trained model used to make a prediction,
+        num (int): the number of samples to show,
+        seed (int): if you want reproducibility, enter this here number."""
+
+    # Fixing random state for reproducibility
+    if seed:
+        np.random.seed(seed)
+
+    choices = np.random.randint(0, len(sats), num)
+    newshape = np.insert(sats[0].shape, 0, 1)
+
+    fig, axs = plt.subplots(num, 3)
+
+    for a in range(num):
+        if a == 0:
+            axs[a, 0].imshow(sats[choices[a]])
+            axs[a, 0].set_title("Satellite")
+            axs[a, 1].imshow(masks[choices[a]])
+            axs[a, 1].set_title("Ground Truth")
+            axs[a, 2].imshow(oh_to_rgb(model.predict(sats[a].reshape(newshape)), class_df))
+            axs[a, 2].set_title("Prediction")
+        else:
+            axs[a, 0].imshow(sats[choices[a]])
+            axs[a, 1].imshow(masks[choices[a]])
+            axs[a, 2].imshow(oh_to_rgb(model.predict(sats[a].reshape(newshape)), class_df))
+
+    plt.setp(axs, xticks=[], yticks=[])
+    plt.tight_layout()
+    plt.show()
