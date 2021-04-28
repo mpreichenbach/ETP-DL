@@ -66,6 +66,9 @@ def unet(im_dim, filters, classes, bn=True, do_rate=0., opt='Adam', loss='catego
     return cnn
 
 
+test_model = unet(64, 16, 7, do_rate=0.2)
+test_model.fit(sats, oh_encoded, epochs=10, validation_split=0.2)
+
 # ----------------------------------------------------
 # AlexNet with Extras
 # ----------------------------------------------------

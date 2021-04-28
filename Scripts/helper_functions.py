@@ -17,10 +17,6 @@ masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
 #####
 
 class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
-# Get class names
-class_names = class_df['name'].tolist()
-# Get class RGB values
-class_rgb_values = class_df[['r', 'g', 'b']].values.tolist()
 
 
 def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
@@ -199,12 +195,41 @@ def oh_to_rgb(oh_array, class_df):
         #     print(str(s) + ' tiles complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
-                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(oh_array[s, h, w])]).astype(np.uint8)
+                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(oh_array[s, h, w])])
 
+    rgb_array = rgb_array.astype(np.uint8)
     return rgb_array
 
 
-def view_tiles(sats, masks, model, seed, class_df, num=5):
+def vec_to_oh(array, progress=False, cycle=100):
+    """This function takes "array" and converts its depth vectors to one-hot encodings.
+
+    Args:
+        array (ndarray): numpy array that is likely the output of a NN model prediction,
+        progress (Boolean): if applied to a large array, toggle this to True to get the progress,
+        cycle (int): determines how often to print a report."""
+
+    [samples, height, width, depth] = array.shape
+    identity = np.identity(depth)
+
+    oh_array = np.zeros(array.shape)
+
+    for i in range(samples):
+        for j in range(height):
+            for k in range(width):
+                hot_spot = np.argmax(array[i, j, k])
+                oh_array[i, j, k, hot_spot] = 1
+
+        if progress and (i % cycle == 0):
+            print(str(i) + ' tiles complete out of ' + str(samples))
+
+    oh_array = oh_array.astype(np.uint8)
+    return oh_array
+
+
+
+
+def view_tiles(sats, masks, predictions, seed=0, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -212,8 +237,8 @@ def view_tiles(sats, masks, model, seed, class_df, num=5):
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
         model (tf.keras.model): the trained model used to make a prediction,
-        num (int): the number of samples to show,
-        seed (int): if you want reproducibility, enter this here number."""
+        seed (int): if you want reproducibility, enter this here number,
+        num (int): the number of samples to show."""
 
     # Fixing random state for reproducibility
     if seed:
@@ -230,12 +255,12 @@ def view_tiles(sats, masks, model, seed, class_df, num=5):
             axs[a, 0].set_title("Satellite")
             axs[a, 1].imshow(masks[choices[a]])
             axs[a, 1].set_title("Ground Truth")
-            axs[a, 2].imshow(oh_to_rgb(model.predict(sats[a].reshape(newshape)), class_df))
+            axs[a, 2].imshow(predictions[a])
             axs[a, 2].set_title("Prediction")
         else:
             axs[a, 0].imshow(sats[choices[a]])
             axs[a, 1].imshow(masks[choices[a]])
-            axs[a, 2].imshow(oh_to_rgb(model.predict(sats[a].reshape(newshape)), class_df))
+            axs[a, 2].imshow(predictions[choices[a]])
 
     plt.setp(axs, xticks=[], yticks=[])
     plt.tight_layout()
