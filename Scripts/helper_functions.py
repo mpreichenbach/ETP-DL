@@ -161,6 +161,7 @@ def rgb_to_oh(rgb_array, class_df):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
 
+    oh_array = oh_array.astype(np.uint8)
     return oh_array
 
 
