@@ -24,19 +24,19 @@ oh_encoded_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128
 class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
 
 
-def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
+def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
     contains the corresponding pixel labels.
 
     Args:
         data_path (str): the location of the training data; imagery and masks should be together,
         n_tiles (int): the number of tiles to extract,
-        im_dim (int): height of the input image to extract a tile from (input is assumed to be square),
         tile_dim (int): height of the tile to extract (tiles will be square),
+        im_dim (int): height of the input image to extract a tile from (input is assumed to be square),
         fnr (Boolean): perform a random flip and rotation of each tile,
 
 
-    Note that this script does not exclude the possibility that two tiles overlaps, or even that the same tile could be
+    Note that this script does not exclude the possibility that two tiles overlap, or even that the same tile could be
     selected twice. In the future, I would like to ensure that there are no overlaps, but that would take a lot more
     code.
     """
@@ -230,8 +230,6 @@ def vec_to_oh(array, progress=False, cycle=100):
 
     oh_array = oh_array.astype(np.uint8)
     return oh_array
-
-
 
 
 def view_tiles(sats, masks, predictions, seed=0, num=5):
