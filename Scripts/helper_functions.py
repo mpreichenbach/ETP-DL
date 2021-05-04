@@ -7,10 +7,15 @@ from matplotlib import pyplot as plt
 
 data_path = "Data/DeepGlobe Land Cover Dataset"
 
-sats = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG sat tiles.npy')
-oh_encoded = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG one-hot encoded tiles.npy')
+sats_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 sat tiles.npy')
+masks_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 mask tiles.npy')
+oh_encoded_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 one-hot encoded tiles.npy')
 
-masks = np.load('Data/DeepGlobe Land Cover Dataset/10000 DG mask tiles.npy')
+sats_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 sat tiles.npy')
+masks_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 mask tiles.npy')
+oh_encoded_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 one-hot encoded tiles.npy')
+
+
 
 #####
 # Get class info
@@ -150,8 +155,8 @@ def rgb_to_oh(rgb_array, class_df):
     rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
 
     for s in range(n_tiles):
-        # if s % 100 == 0:
-        #     print(str(s) + ' complete out of ' + str(n_tiles))
+        if s % 100 == 0:
+            print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
