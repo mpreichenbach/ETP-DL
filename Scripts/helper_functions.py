@@ -248,7 +248,6 @@ def view_tiles(sats, masks, predictions, seed=0, num=5):
         np.random.seed(seed)
 
     choices = np.random.randint(0, len(sats), num)
-    newshape = np.insert(sats[0].shape, 0, 1)
 
     fig, axs = plt.subplots(num, 3)
 
