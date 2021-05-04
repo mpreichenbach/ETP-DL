@@ -70,7 +70,7 @@ def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
             im = im.rotate(r * 90)
 
             sat_arr = np.asarray(im, dtype=np.uint8)
-            sat_tile = sat_arr[i:(i + 64), j:(j + 64)]
+            sat_tile = sat_arr[i:(i + tile_dim), j:(j + tile_dim)]
             sat_tile = sat_tile.reshape([1, tile_dim, tile_dim, 3])
 
         # Opens the full mask image, performs a random flip and rotation, then extracts a tile
@@ -81,7 +81,7 @@ def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
                 im = im.transpose(Image.FLIP_TOP_BOTTOM)
             im = im.rotate(r * 90)
             mask_arr = np.asarray(im, dtype=np.uint8)
-            mask_tile = mask_arr[i:(i + 64), j:(j + 64)]
+            mask_tile = mask_arr[i:(i + tile_dim), j:(j + tile_dim)]
             mask_tile = mask_tile.reshape([1, tile_dim, tile_dim, 3])
 
         sats = np.append(sats, sat_tile, axis=0)
@@ -92,7 +92,7 @@ def extract_tiles(data_path, n_tiles, im_dim=2448, tile_dim=64, fnr=True):
             print(counter)
 
     sats /= 255.
-    masks /= 255.
+    masks = masks.astype(np.uint8)
 
     return [sats, masks]
 
