@@ -17,6 +17,14 @@ def main_block(m, filters, bn, do_rate):
     n = BatchNormalization()(n) if bn else n
     return n
 
+class Unet(im_dim, df):
+    def __init__(self):
+        self.im_dim = im_dim
+        self.df = df
+        self.classes = df['name'].tolist()
+        self.rgb_values = df['r', 'g', 'b'].tolist()
+        self.colors =
+
 
 def unet(im_dim, filters, classes, bn=True, do_rate=0., opt='Adam', loss='categorical_crossentropy'):
     """Implements the UNet architecture, with options for Dropout and BatchNormalization
