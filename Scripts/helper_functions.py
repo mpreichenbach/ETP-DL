@@ -7,24 +7,6 @@ from matplotlib import pyplot as plt
 
 data_path = "Data/DeepGlobe Land Cover Dataset"
 
-sats_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 sat tiles.npy')
-masks_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 mask tiles.npy')
-oh_encoded_64 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/64x64 one-hot encoded tiles.npy')
-
-sats_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 sat tiles.npy')
-masks_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 mask tiles.npy')
-oh_encoded_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 one-hot encoded tiles.npy')
-
-sats_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 sat tiles.npy')
-masks_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 mask tiles.npy')
-oh_encoded_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 one-hot encoded tiles.npy')
-
-#####
-# Get land-cover class info
-#####
-
-class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
-
 class DigitalGlobeDataset():
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
      to floats, and provides the land-cover classifications in a dataframe."""
