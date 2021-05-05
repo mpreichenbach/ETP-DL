@@ -15,14 +15,38 @@ sats_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 sat t
 masks_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 mask tiles.npy')
 oh_encoded_128 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/128x128 one-hot encoded tiles.npy')
 
-
+sats_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 sat tiles.npy')
+masks_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 mask tiles.npy')
+oh_encoded_256 = np.load('Data/DeepGlobe Land Cover Dataset/Numpy Arrays/256x256 one-hot encoded tiles.npy')
 
 #####
-# Get class info
+# Get land-cover class info
 #####
 
 class_df = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
 
+class DigitalGlobeDataset():
+    """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
+     to floats, and provides the land-cover classifications in a dataframe."""
+
+    def __init__(self, data_path):
+        self.data_path = data_path
+
+    def class_dict(self):
+        class_dict = pd.read_csv(os.path.join(data_path, 'class_dict.csv'))
+
+        return class_dict
+
+    def load(self, dim):
+        # loads the sat, mask, and one-hot encoded files, while transforming sat values to floats in [0,1]
+        assert dim in {64, 128, 256}, "dim parameter must be in {64, 128, 256}"
+
+        sats = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " sat tiles.npy").astype(np.float32)
+        sats /= 255
+        masks = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " mask tiles.npy")
+        oh_encoded = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " one-hot encoded tiles.npy")
+
+        return [sats, masks, oh_encoded]
 
 def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
