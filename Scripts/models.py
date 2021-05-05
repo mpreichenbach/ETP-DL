@@ -27,8 +27,6 @@ class Unet():
         self.color_dict = dict(zip(self.classes, self.colors))
         self.depth = depth
 
-    def
-
     def model(self, filters, do_rate=0, bn=True, opt='Adam', loss='categorical_crossentropy'):
         """Implements the UNet architecture, with options for Dropout and BatchNormalization
 
