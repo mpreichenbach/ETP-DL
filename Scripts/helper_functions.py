@@ -107,6 +107,22 @@ def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
 
     return [sats, masks]
 
+# this code extracts images and ensures they won't overlap.
+for list in a:
+    n = len(a)
+    coordinates = np.zeros([0, 0, 0])
+    while len(used_images) < n:
+        image = np.random.randint(0, n)
+        row = np.random.randint(0, im_height - tile_dim)
+        col = np.random.randint(0, im_width - tile_dim)
+        if image in coordinates[:, 0]:
+            matches = np.where(coordinates[:, 0] == image)
+            cond_r = matches[:, 1] - tile_dim < row < matches[:, 1] + tile_dim
+            cond_c = matches[:, 2] - tile_dim < col < matches[:, 2] + tile_dim
+            if True in cond_r and True in cond_c:
+                break
+            break
+        continue
 
 def save_tiles(sats, masks, sat_path, mask_path):
     """This function saves the tiled images extracted by extract_tiles() to sat/mask folders of your choice, as png
