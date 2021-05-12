@@ -81,7 +81,8 @@ class Unet:
 
 class DeepWaterMap:
     """Implements the binary water-detection CNN, with code and data given here:
-    https://github.com/isikdogan/deepwatermap"""
+    https://github.com/isikdogan/deepwatermap. The original implementation put BN layers before the ReLU activation;
+    this order is now believed to perform worse. I have updated the architecture to include ReLU before BN."""
 
     def __init__(self, im_dim):
         self.im_dim = im_dim
@@ -89,29 +90,29 @@ class DeepWaterMap:
     def model(self, min_width = 4, optimizer='Adam', loss='binary crossentropy'):
         inputs = Input(shape=[None, None, 6])
 
-        def conv_block(x, num_filters, kernel_size, stride=1, use_relu=True):
+        def conv_block(x, num_filters, kernel_size, stride=1):
             x = Conv2D(
                 filters=num_filters,
                 kernel_size=kernel_size,
                 kernel_initializer='he_uniform',
                 strides=stride,
                 padding='same',
+                activation='relu',
                 use_bias=False)(x)
             x = BatchNormalization()(x)
-            if use_relu:
-                x = Activation('relu')(x)
 
             return x
         def downscaling_unit(x):
             num_filters = int(x.get_shape()[-1]) * 4
             x_1 = conv_block(x, num_filters, kernel_size=5, stride=2)
             x_2 = conv_block(x_1, num_filters, kernel_size=3, stride=1)
-            x = Add()([x1, x_2])
+            x = Add()([x_1, x_2])
 
             return x
 
         def upscaling_unit(x):
             num_filters = int(x.get_shape()[-1]) // 4
+            # is the following lambda layer better or worse than UpSampling2D?
             x = Lambda(lambda x: tf.nn.depth_to_space(x, 2))(x)
             x_1 = conv_block(x, num_filters, kernel_size=3)
             x_2 = conv_block(x_1, num_filters, kernel_size=3)
@@ -132,7 +133,7 @@ class DeepWaterMap:
         num_filters = min_width
 
         # first layer
-        x = conv_block(inputs, num_filters, kernel_size=1, use_relu=False)
+        x = conv_block(inputs, num_filters, kernel_size=1)
         skip_connections.append(x)
 
         # encoder
@@ -145,12 +146,13 @@ class DeepWaterMap:
 
         # decoder
         for i in range(4):
+            # do they really want to add the layers, instead of a concatenation?
             x = Add()([x, skip_connections.pop()])
             x = upscaling_unit(x)
 
         # last layer
         x = Add()([x, skip_connections.pop()])
-        x = conv_block(x, 1, kernel_size=1, use_relu=False)
+        x = conv_block(x, 1, kernel_size=1)
         x = Activation('sigmoid')(x)
 
         model = Model(inputs=inputs, outputs=x)
