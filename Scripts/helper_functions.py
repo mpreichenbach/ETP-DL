@@ -30,7 +30,7 @@ class DigitalGlobeDataset():
 
         return [sats, masks, oh_encoded]
 
-def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
+def extract_tiles(data_path, n_tiles, tile_dim, seed, im_dim=2448, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
     contains the corresponding pixel labels.
 
@@ -38,6 +38,7 @@ def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
         data_path (str): the location of the training data; imagery and masks should be together,
         n_tiles (int): the number of tiles to extract,
         tile_dim (int): height of the tile to extract (tiles will be square),
+        seed (int): sets the random seed value
         im_dim (int): height of the input image to extract a tile from (input is assumed to be square),
         fnr (Boolean): perform a random flip and rotation of each tile,
 
@@ -52,77 +53,80 @@ def extract_tiles(data_path, n_tiles, tile_dim, im_dim=2448, fnr=True):
     file_names = [x for x in file_names if x.endswith('jpg')]
 
     # choose random images (with replacement) from which to extract tiles from
-    random.seed(10)
-    choices = random.choices(file_names, k=n_tiles)
+    if seed:
+        random.seed(seed)
+
+    # initializes the arrays which will hold the extracted tiles
     sats = np.zeros((0, tile_dim, tile_dim, 3))
     masks = np.zeros((0, tile_dim, tile_dim, 3))
 
-    counter = 0
-
-    for item in choices:
-
-        num = item.partition('_')[0]
-        sat_name = num + '_sat.jpg'
-        mask_name = num + '_mask.png'
-
-        i = random.randint(0, (im_dim - tile_dim))
-        j = random.randint(0, (im_dim - tile_dim))
-
-        if fnr:
-            f = random.randint(0, 2)
-            r = random.randint(0, 3)
-
-        # Opens the full satellite image, performs a random flip and rotation, then extracts a tile
-        with Image.open(os.path.join(data_path, sat_name)) as im:
-            if f == 1:
-                im = im.transpose(Image.FLIP_LEFT_RIGHT)
-            if f == 2:
-                im = im.transpose(Image.FLIP_TOP_BOTTOM)
-            im = im.rotate(r * 90)
-
-            sat_arr = np.asarray(im, dtype=np.uint8)
-            sat_tile = sat_arr[i:(i + tile_dim), j:(j + tile_dim)]
-            sat_tile = sat_tile.reshape([1, tile_dim, tile_dim, 3])
-
-        # Opens the full mask image, performs a random flip and rotation, then extracts a tile
-        with Image.open(os.path.join(data_path, mask_name)) as im:
-            if f == 1:
-                im = im.transpose(Image.FLIP_LEFT_RIGHT)
-            if f == 2:
-                im = im.transpose(Image.FLIP_TOP_BOTTOM)
-            im = im.rotate(r * 90)
-            mask_arr = np.asarray(im, dtype=np.uint8)
-            mask_tile = mask_arr[i:(i + tile_dim), j:(j + tile_dim)]
-            mask_tile = mask_tile.reshape([1, tile_dim, tile_dim, 3])
-
-        sats = np.append(sats, sat_tile, axis=0)
-        masks = np.append(masks, mask_tile, axis=0)
-
-        counter +=1
-        if counter % 50 == 0:
-            print(counter)
-
-    sats /= 255.
-    masks = masks.astype(np.uint8)
-
-    return [sats, masks]
-
-# this code extracts images and ensures they won't overlap.
-for list in a:
-    n = len(a)
+    # creates a list of coordinates which ensures no tiles overlap
     coordinates = np.zeros([0, 0, 0])
-    while len(used_images) < n:
-        image = np.random.randint(0, n)
-        row = np.random.randint(0, im_height - tile_dim)
-        col = np.random.randint(0, im_width - tile_dim)
+    while len(coordinates) < n_tiles:
+        image = np.random.randint(0, n_tiles)
+        row = np.random.randint(0, im_dim - tile_dim)
+        col = np.random.randint(0, im_dim - tile_dim)
         if image in coordinates[:, 0]:
             matches = np.where(coordinates[:, 0] == image)
             cond_r = matches[:, 1] - tile_dim < row < matches[:, 1] + tile_dim
             cond_c = matches[:, 2] - tile_dim < col < matches[:, 2] + tile_dim
             if True in cond_r and True in cond_c:
                 break
-            break
+            else:
+                coordinates = np.append(coordinates, np.asarray([image, row, col]))
         continue
+
+    counter = 0
+
+    for i in range(n_tiles):
+
+        item = file_names[coordinates[i, 0]]
+        num = item.partition('_')[0]
+        sat_name = num + '_sat.jpg'
+        mask_name = num + '_mask.png'
+
+        row = coordinates[i, 1]
+        col = coordinates[i, 2]
+
+        if fnr:
+            f = random.randint(0, 2)
+            r = random.randint(0, 3)
+
+            # Opens the full satellite image, performs a random flip and rotation, then extracts a tile
+            with Image.open(os.path.join(data_path, sat_name)) as im:
+                if f == 1:
+                    im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                if f == 2:
+                    im = im.transpose(Image.FLIP_TOP_BOTTOM)
+                im = im.rotate(r * 90)
+
+                sat_arr = np.asarray(im, dtype=np.uint8)
+                sat_tile = sat_arr[row:(row + tile_dim), col:(col + tile_dim)]
+                sat_tile = sat_tile.reshape([1, tile_dim, tile_dim, 3])
+
+            # Opens the full mask image, performs a random flip and rotation, then extracts a tile
+            with Image.open(os.path.join(data_path, mask_name)) as im:
+                if f == 1:
+                    im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                if f == 2:
+                    im = im.transpose(Image.FLIP_TOP_BOTTOM)
+                im = im.rotate(r * 90)
+                mask_arr = np.asarray(im, dtype=np.uint8)
+                mask_tile = mask_arr[row:(row + tile_dim), col:(col + tile_dim)]
+                mask_tile = mask_tile.reshape([1, tile_dim, tile_dim, 3])
+
+        sats = np.append(sats, sat_tile, axis=0)
+        masks = np.append(masks, mask_tile, axis=0)
+
+        counter += 1
+        if counter % 50 == 0:
+            print(counter)
+
+    sats = sats.astype(np.uint8)
+    masks = masks.astype(np.uint8)
+
+    return [sats, masks]
+
 
 def save_tiles(sats, masks, sat_path, mask_path):
     """This function saves the tiled images extracted by extract_tiles() to sat/mask folders of your choice, as png
@@ -255,14 +259,14 @@ def vec_to_oh(array, progress=False, cycle=100):
     return oh_array
 
 
-def view_tiles(sats, masks, predictions, seed=0, num=5):
+def view_tiles(sats, masks, preds, seed=0, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
     Args:
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
-        model (tf.keras.model): the trained model used to make a prediction,
+        preds (ndarray): the predicted images given by the model,
         seed (int): if you want reproducibility, enter this here number,
         num (int): the number of samples to show."""
 
@@ -280,12 +284,12 @@ def view_tiles(sats, masks, predictions, seed=0, num=5):
             axs[a, 0].set_title("Satellite")
             axs[a, 1].imshow(masks[choices[a]])
             axs[a, 1].set_title("Ground Truth")
-            axs[a, 2].imshow(predictions[a])
+            axs[a, 2].imshow(preds[a])
             axs[a, 2].set_title("Prediction")
         else:
             axs[a, 0].imshow(sats[choices[a]])
             axs[a, 1].imshow(masks[choices[a]])
-            axs[a, 2].imshow(predictions[choices[a]])
+            axs[a, 2].imshow(preds[choices[a]])
 
     plt.setp(axs, xticks=[], yticks=[])
     plt.tight_layout()
