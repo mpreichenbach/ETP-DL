@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 from matplotlib import pyplot as plt
 
-data_path = "Data/DeepGlobe Land Cover Dataset"
+data_path = "Data/DeepGlobe Land Cover Dataset/train"
 
 class DigitalGlobeDataset():
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
@@ -30,7 +30,8 @@ class DigitalGlobeDataset():
 
         return [sats, masks, oh_encoded]
 
-def extract_tiles(data_path, n_tiles, tile_dim, seed, im_dim=2448, fnr=True):
+# For week of 5/17, figure out why the same image gets picked each time in the while loop
+def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
     contains the corresponding pixel labels.
 
@@ -40,13 +41,7 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed, im_dim=2448, fnr=True):
         tile_dim (int): height of the tile to extract (tiles will be square),
         seed (int): sets the random seed value
         im_dim (int): height of the input image to extract a tile from (input is assumed to be square),
-        fnr (Boolean): perform a random flip and rotation of each tile,
-
-
-    Note that this script does not exclude the possibility that two tiles overlap, or even that the same tile could be
-    selected twice. In the future, I would like to ensure that there are no overlaps, but that would take a lot more
-    code.
-    """
+        fnr (Boolean): perform a random flip and rotation of each tile."""
 
     # generate a list of all file names in the training data, and subset to only the satellite files
     file_names = os.listdir(data_path)
@@ -61,19 +56,40 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed, im_dim=2448, fnr=True):
     masks = np.zeros((0, tile_dim, tile_dim, 3))
 
     # creates a list of coordinates which ensures no tiles overlap
-    coordinates = np.zeros([0, 0, 0])
+    init_image = np.random.randint(0, n_tiles)
+    init_row = np.random.randint(0, im_dim - tile_dim)
+    init_col = np.random.randint(0, im_dim - tile_dim)
+    coordinates = np.asarray([init_image, init_row, init_col])
+    coordinates = coordinates.reshape([1, 3])
+
     while len(coordinates) < n_tiles:
+        print(len(coordinates))
         image = np.random.randint(0, n_tiles)
         row = np.random.randint(0, im_dim - tile_dim)
         col = np.random.randint(0, im_dim - tile_dim)
         if image in coordinates[:, 0]:
-            matches = np.where(coordinates[:, 0] == image)
-            cond_r = matches[:, 1] - tile_dim < row < matches[:, 1] + tile_dim
-            cond_c = matches[:, 2] - tile_dim < col < matches[:, 2] + tile_dim
-            if True in cond_r and True in cond_c:
-                break
+            matches = list(np.where(coordinates[:, 0] == image))
+
+            r_lower_bound = coordinates[matches, 1] - tile_dim
+            r_upper_bound = coordinates[matches, 1] + tile_dim
+            c_lower_bound = coordinates[matches, 2] - tile_dim
+            c_upper_bound = coordinates[matches, 2] + tile_dim
+
+
+            cond_r_1 = [x < row for x in r_lower_bound[0]]
+            cond_r_2 = [row < x for x in r_upper_bound[0]]
+            cond_c_1 = [y < col for y in c_lower_bound[0]]
+            cond_c_2 = [col < y for y in c_upper_bound[0]]
+
+            cond_r = [x and y for x, y in zip(cond_r_1, cond_r_2)]
+            cond_c = [x and y for x, y in zip(cond_c_1, cond_c_2)]
+
+            intersect = [x and y for x, y in zip(cond_r, cond_c)]
+
+            if True in intersect:
+                continue
             else:
-                coordinates = np.append(coordinates, np.asarray([image, row, col]))
+                coordinates = np.append(coordinates, np.asarray([image, row, col]).reshape([1, 3]), axis=0)
         continue
 
     counter = 0
