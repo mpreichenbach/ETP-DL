@@ -63,11 +63,11 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
     coordinates = coordinates.reshape([1, 3])
 
     while len(coordinates) < n_tiles:
-        print(len(coordinates))
-        image = np.random.randint(0, n_tiles)
+        image = np.random.randint(0, len(file_names))
         row = np.random.randint(0, im_dim - tile_dim)
         col = np.random.randint(0, im_dim - tile_dim)
         if image in coordinates[:, 0]:
+            print(image)
             matches = list(np.where(coordinates[:, 0] == image))
 
             r_lower_bound = coordinates[matches, 1] - tile_dim
@@ -90,7 +90,8 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
                 continue
             else:
                 coordinates = np.append(coordinates, np.asarray([image, row, col]).reshape([1, 3]), axis=0)
-        continue
+        else:
+            coordinates = np.append(coordinates, np.asarray([image, row, col]).reshape([1, 3]), axis=0)
 
     counter = 0
 
