@@ -30,10 +30,12 @@ class DigitalGlobeDataset():
 
         return [sats, masks, oh_encoded]
 
-# For week of 5/17, figure out why the same image gets picked each time in the while loop
+
 def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
     """Generates numpy arrays to hold training data. The output `sats' contains the satellite tiles, and `masks'
-    contains the corresponding pixel labels.
+    contains the corresponding pixel labels. Note that this function guarantees that overlapping tiles are NOT
+    selected; this can take a long time if the one tries to extract too many large tiles. For small and medium-sized
+    initial datasets, it will be faster just to segment every image into appropriately sized tiles.
 
     Args:
         data_path (str): the location of the training data; imagery and masks should be together,
@@ -55,26 +57,25 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
     sats = np.zeros((0, tile_dim, tile_dim, 3))
     masks = np.zeros((0, tile_dim, tile_dim, 3))
 
-    # creates a list of coordinates which ensures no tiles overlap
-    init_image = np.random.randint(0, n_tiles)
+    init_image = np.random.randint(0, len(file_names))
     init_row = np.random.randint(0, im_dim - tile_dim)
     init_col = np.random.randint(0, im_dim - tile_dim)
     coordinates = np.asarray([init_image, init_row, init_col])
     coordinates = coordinates.reshape([1, 3])
 
+    # creates a list of coordinates [image, row, col] where row, col are the coordinates of the upper-left corner of a
+    # tile. When used later, the logic in this while-loop ensures that no coordinates will yield overlapping tiles
     while len(coordinates) < n_tiles:
         image = np.random.randint(0, len(file_names))
         row = np.random.randint(0, im_dim - tile_dim)
         col = np.random.randint(0, im_dim - tile_dim)
         if image in coordinates[:, 0]:
-            print(image)
-            matches = list(np.where(coordinates[:, 0] == image))
+            matches = tuple(np.where(coordinates[:, 0] == image))
 
             r_lower_bound = coordinates[matches, 1] - tile_dim
             r_upper_bound = coordinates[matches, 1] + tile_dim
             c_lower_bound = coordinates[matches, 2] - tile_dim
             c_upper_bound = coordinates[matches, 2] + tile_dim
-
 
             cond_r_1 = [x < row for x in r_lower_bound[0]]
             cond_r_2 = [row < x for x in r_upper_bound[0]]
@@ -96,14 +97,12 @@ def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
     counter = 0
 
     for i in range(n_tiles):
+        [image, row, col] = coordinates[i]
 
-        item = file_names[coordinates[i, 0]]
-        num = item.partition('_')[0]
+        im_name = file_names[image]
+        num = im_name.partition('_')[0]
         sat_name = num + '_sat.jpg'
         mask_name = num + '_mask.png'
-
-        row = coordinates[i, 1]
-        col = coordinates[i, 2]
 
         if fnr:
             f = random.randint(0, 2)
