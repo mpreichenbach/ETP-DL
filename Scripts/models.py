@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
@@ -160,4 +162,33 @@ class DeepWaterMap:
         return model
 
 
+#####
+# Dataset classes
+#####
 
+class Potsdam:
+    """Class to load processed ISPRS Potsdam imagery, with methods to train models and view predictions."""
+
+    def __init__(self, dim):
+        self.dim = dim
+        assert dim in {256, 512}, "dim parameter must be in {256, 512}"
+        self.data_path = 'Data/ISPRS/Potsdam/Numpy Arrays/'
+        self.class_dict = pd.read_csv(self.data_path + 'class_dict.csv')
+
+    # this method loads the entire Potsdam dataset (with tile size specified by dim), then extracts a random selection
+    # of size n_tiles. A 'seed' argument is included to ensure one can replicate extracted data.
+    def load_data(self, n_tiles, seed):
+        if seed:
+            np.random.seed(seed)
+
+        sats = np.load(self.data_path + 'RGB_tiles_' + str(self.dim) + '.npy')
+        sats = sats / 255
+        sats = sats.astype(np.float32)
+        masks = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
+        enc = np.load(self.data_path + 'Enc_tiles_' + str(self.dim) + 'npy')
+
+        choices = np.random.choice(len(sats), n_tiles, replace=False)
+
+        sats, masks, enc = sats[choices], masks[choices], enc[choices]
+
+        return sats, masks, enc
