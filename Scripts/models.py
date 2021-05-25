@@ -26,7 +26,7 @@ def main_block(m, n_filters, dim, bn, do_rate):
     return n
 
 
-def unet(im_dim, n_filters, dim=3, do_rate=0, bn=True, opt='Adam', loss='categorical_crossentropy'):
+def unet(im_dim, n_filters, classes, dim=3, do_rate=0, bn=True, opt='Adam', loss='categorical_crossentropy'):
     """Implements the UNet architecture, with options for Dropout and BatchNormalization
 
         Args:
@@ -65,7 +65,7 @@ def unet(im_dim, n_filters, dim=3, do_rate=0, bn=True, opt='Adam', loss='categor
     con_3 = Concatenate(axis=-1)([up_3, b1])
     n_filters = int(n_filters / 2)
     b7 = main_block(con_3, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    output_img = Conv2D(3, 1, padding='same', activation='softmax')(b7)
+    output_img = Conv2D(classes, 1, padding='same', activation='softmax')(b7)
 
     # instantiates a model and compiles with the optimizer and loss function
     cnn = Model(input_img, output_img)
