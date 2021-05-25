@@ -23,12 +23,12 @@ class DigitalGlobeDataset():
         # loads the sat, mask, and one-hot encoded files, while transforming sat values to floats in [0,1]
         assert dim in {64, 128, 256}, "dim parameter must be in {64, 128, 256}"
 
-        sats = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " sat tiles.npy").astype(np.float32)
+        sats = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " sat tiles.npy").astype(np.float32)
         sats /= 255
-        masks = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " mask tiles.npy")
-        oh_encoded = np.load(data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " one-hot encoded tiles.npy")
+        masks = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " mask tiles.npy")
+        oh_encoded = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " one-hot encoded tiles.npy")
 
-        return [sats, masks, oh_encoded]
+        return sats, masks, oh_encoded
 
 
 def extract_tiles(data_path, n_tiles, tile_dim, seed=0, im_dim=2448, fnr=True):
