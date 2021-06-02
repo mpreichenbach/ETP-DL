@@ -310,26 +310,3 @@ def view_tiles(sats, masks, preds, seed=0, num=5):
     plt.setp(axs, xticks=[], yticks=[])
     plt.tight_layout()
     plt.show()
-
-count = 0
-for d in range(len(sats)):
-    for x in range(11):
-        for y in range(11):
-            if count % 10 == 0:
-                print(str(count) + ' out of 4598')
-
-            rot = np.random.randint(0, 3)
-            trans = np.random.randint(0, 1)
-            sat_tile = sats[d, x:x + 512, y:y + 512]
-            mask_tile = masks[d, x:x + 512, y:y + 512]
-            sat_tile = np.rot90(sat_tile, rot)
-            mask_tile = np.rot90(mask_tile, rot)
-            if trans:
-                sat_tile = np.transpose(sat_tile, axes=(0, 1))
-                mask_tile = np.transpose(mask_tile, axes=(0, 1))
-            sat_tile = sat_tile.reshape([1, 512, 512, 3])
-            mask_tile = mask_tile.reshape([1, 512, 512, 3])
-            sat_tiles_512[count] = sat_tile
-            mask_tiles_512[count] = mask_tile
-
-            count += 1
