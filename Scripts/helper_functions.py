@@ -33,12 +33,11 @@ class DigitalGlobeDataset():
 class ISPRS():
     """ISPRS semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
-    def __init__(self, loc):
-        self.loc = loc
-        assert loc in {'Potsdam', 'Vaihingen'}, 'Location must be one of \'Potsdam\', \'Vaihingen\'.'
+    def __init__(self):
+        self.loc = 'Imagery is of Potsdam.'
 
-    def load(self, dim, masks = True, ir=False):
-        data_path = 'Data/ISPRS/' + self.loc + '/Numpy Arrays/'
+    def load(self, dim, masks=True, ir=False):
+        data_path = 'Data/ISPRS/Numpy Arrays/'
 
         self.data_path = data_path
         self.dim = dim
