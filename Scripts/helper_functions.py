@@ -5,8 +5,6 @@ import pandas as pd
 from PIL import Image
 from matplotlib import pyplot as plt
 
-data_path = "Data/DeepGlobe Land Cover Dataset/train"
-
 class DigitalGlobeDataset():
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
      to floats, and provides the land-cover classifications in a dataframe."""
@@ -34,9 +32,9 @@ class ISPRS():
     """ISPRS semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
     def __init__(self):
-        self.loc = 'Imagery is of Potsdam.'
+        self.loc = 'This is Potsdam imagery.'
 
-    def load(self, dim, masks=True, ir=False):
+    def load(self, dim, masks=False, ir=False):
         data_path = 'Data/ISPRS/Numpy Arrays/'
 
         self.data_path = data_path
@@ -50,7 +48,7 @@ class ISPRS():
         enc = np.load(data_path + 'Encoded_tiles_' + str(dim) + '.npy')
 
         if masks:
-            masks = np.load(data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
+            masks = np.load(data_path + 'Label_tiles_' + str(dim) + '.npy')
             return [sats, masks, enc]
         else:
             return [sats, enc]
