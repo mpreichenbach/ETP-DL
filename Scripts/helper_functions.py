@@ -296,57 +296,6 @@ class Unet:
         return cnn
 
 
-unet = Unet(classes=6)
-model = unet.model((256, 256, 3), 16, 9, 3, 0.2)
-
-def unet_small(im_dim, n_filters, classes, dim=3, do_rate=0, bn=True, opt='Adam', loss='categorical_crossentropy'):
-    """Implements the UNet architecture, with options for Dropout and BatchNormalization
-
-        Args:
-            im_dim (int): this is the height or width of the inputs tiles (which should be square),
-            n_filters (int): the number of filters for the initial layer to have (which doubles each subsequent layer),
-            dim (int): the dimension of the filters,
-            do_rate (0<=float<=1): the rate to perform dropout before each convolution,
-            bn (Boolean): whether to include batch normalization after each convolution,
-            opt (str): the optimizer for the model (see Keras documentation for options),
-            loss (str): the loss function for the model (should only change if creating a custom loss)."""
-
-    # Downsampling path
-    input_img = Input(shape=(im_dim, im_dim, 3))
-
-    b1 = unet_main_block(input_img, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    max_1 = MaxPooling2D(pool_size=(2, 2), padding='same')(b1)
-    n_filters *= 2
-    b2 = unet_main_block(max_1, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    max_2 = MaxPooling2D(pool_size=(2, 2), padding='same')(b2)
-    n_filters *= 2
-    b3 = unet_main_block(max_2, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    max_3 = MaxPooling2D(pool_size=(2, 2), padding='same')(b3)
-    n_filters *= 2
-    b4 = unet_main_block(max_3, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-
-    # Upsampling path
-    up_1 = UpSampling2D(size=(2, 2))(b4)
-    con_1 = Concatenate(axis=-1)([up_1, b3])
-    n_filters = int(n_filters / 2)
-    b5 = unet_main_block(con_1, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    up_2 = UpSampling2D(size=(2, 2))(b5)
-    con_2 = Concatenate(axis=-1)([up_2, b2])
-    n_filters = int(n_filters / 2)
-    b6 = unet_main_block(con_2, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    up_3 = UpSampling2D(size=(2, 2))(b6)
-    con_3 = Concatenate(axis=-1)([up_3, b1])
-    n_filters = int(n_filters / 2)
-    b7 = unet_main_block(con_3, n_filters=n_filters, dim=dim, bn=bn, do_rate=do_rate)
-    output_img = Conv2D(classes, 1, padding='same', activation='softmax')(b7)
-
-    # instantiates a model and compiles with the optimizer and loss function
-    cnn = Model(input_img, output_img)
-    cnn.compile(optimizer=opt, loss=loss)
-
-    return cnn
-
-
 # ----------------------------------------------------
 # DeepWaterMask
 # ----------------------------------------------------
