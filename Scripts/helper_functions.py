@@ -235,9 +235,7 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
 # ----------------------------------------------------
 
 class Unet:
-    def __init__(self, size, classes):
-        assert size in {'big', 'small'}, 'Size must be either \'small\' or \'big\'.'
-        self.size = size
+    def __init__(self, classes):
         self.classes = classes
 
     def model(self, im_dim, n_filters, levels, filter_dims, do_rate, bn=True, opt='Adam',
@@ -245,55 +243,61 @@ class Unet:
         """Implements the Unet architecture.
 
         Args:
-            im_dim (int): length of input tile size,
+            im_dim (tuple): the shape of an input image,
             n_filters (int): the number of filters in the first/last convolutional layers,
             levels (int): the number of levels in the network, including the bottom of the 'U',
-            filter_dims (int or list): the size of the filters in the respective convolutional layers,
+            filter_dims (int or list-like): the size of the filters in the respective convolutional layers,
             do_rate (0 <= float <= 1): the dropout rate,
             bn (Boolean): whether to include batch-normalization,
             opt (string): the optimizer to compile the model with,
             loss (string): the loss function to compile the model with."""
 
-        assert (im_dim / levels < 1.0), 'Too many levels for this input image size.'
-        assert (levels == len(filter_dims)), 'Specify the same number of filter dimensions as levels.'
+        assert (im_dim[0] / (2 ** levels) >= 1.0), 'Too many levels for this input image size.'
 
-        if self.size == 'small':
+        if isinstance(filter_dims, int):
             filter_dim_list = []
             for level in range(levels):
                 filter_dim_list.append(filter_dims)
+        else:
+            filter_dim_list = list(map(int, filter_dims))
+            assert (levels == len(filter_dim_list)), 'Specify the same number of filter dimensions as levels.'
 
-        layer_list = []
+        print(filter_dim_list)
+
+        layer_dict = {}
 
         # downsampling path
-        x = Input(shape=(im_dim, im_dim, self.classes))
-        layer_list.append(x)
+        x = Input(shape=im_dim)
+        layer_dict['input'] = x
 
-        for level in range(levels):
-            x = unet_main_block(x, n_filters=n_filters, dim=filter_dims[level], bn=bn, do_rate=do_rate)
-            layer_list.append(x)
+        for level in range(levels - 1):
+            x = unet_main_block(x, n_filters=n_filters, dim=filter_dim_list[level], bn=bn, do_rate=do_rate)
+            layer_dict['level_' + str(level)] = x
             x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
             n_filters *= 2
 
+        print(layer_dict)
+
         # lowest level
-        x = unet_main_block(x, n_filters=n_filters, dim=filter_dims[-1], bn=bn, do_rate=do_rate)
+        x = unet_main_block(x, n_filters=n_filters, dim=filter_dim_list[-1], bn=bn, do_rate=do_rate)
 
         # upsampling path
-        for level in range(levels):
+        for level in range(levels - 1):
             x = UpSampling2D(size=(2, 2))(x)
-            x = Concatenate(axis=-1)[x, layer_list[-(level + 1)]]
+            x = Concatenate(axis=-1)([x, layer_dict['level_' + str(levels - (level + 2))]])
             n_filters = int(n_filters / 2)
-            x = unet_main_block(x, n_filters=n_filters, dim=filter_dims[-(level + 2)], bn=bn, do_rate=do_rate)
+            x = unet_main_block(x, n_filters=n_filters, dim=filter_dim_list[1 - level], bn=bn, do_rate=do_rate)
 
         output_img = Conv2D(self.classes, 1, padding='same', activation='softmax')(x)
 
-        cnn = Model(layer_list[0], output_img)
+        cnn = Model(layer_dict['input'], output_img)
         cnn.compile(optimizer=opt, loss=loss)
 
         return cnn
 
 
-
-
+unet = Unet(classes=6)
+model = unet.model((256, 256, 3), 16, 9, 3, 0.2)
 
 def unet_small(im_dim, n_filters, classes, dim=3, do_rate=0, bn=True, opt='Adam', loss='categorical_crossentropy'):
     """Implements the UNet architecture, with options for Dropout and BatchNormalization
