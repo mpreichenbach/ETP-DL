@@ -64,6 +64,53 @@ class ISPRS():
 # Helper functions
 #####
 
+def rgb_to_binary(rgb_array, class_df, name):
+    """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
+    (#tiles, height, width, 2). This is the inverse of oh_to_rgb().
+
+    Args:
+        rgb_array (ndarray): an array of all mask imagery, with shape (#tiles, height, width, depth)
+        class_df (data frame): DataFrame with class labels and RGB values in columns (see class_dict.csv above),
+        name (str): the name of class_df for the imagery to differentiate.
+        """
+
+    n_classes = len(class_df)
+    class_ind = class_df[class_df['name'] == name].index[0]
+
+    rgb_list = class_df[['r', 'g', 'b']].values.tolist()
+    rgb_list_of_tuples = []
+
+    identity = np.identity(n_classes, dtype=np.uint8)
+    one_hot_list = []
+
+    n_tiles = rgb_array.shape[0]
+    tile_height = rgb_array.shape[1]
+    tile_width = rgb_array.shape[2]
+
+    oh_array = np.zeros((n_tiles, tile_height, tile_width, n_classes))
+
+    for rgb in rgb_list:
+        rgb_tuple = tuple(rgb)
+        rgb_list_of_tuples.append(rgb_tuple)
+
+    for row in range(n_classes):
+        if row != class_ind:
+            one_hot_list.append(tuple(identity[0]))
+        else:
+            one_hot_list.append(tuple(identity[1]))
+
+    rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
+
+    for s in range(n_tiles):
+        if s % 100 == 0:
+            print(str(s) + ' complete out of ' + str(n_tiles))
+        for h in range(tile_height):
+            for w in range(tile_width):
+                oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
+
+    oh_array = oh_array.astype(np.uint8)
+    return oh_array
+
 def rgb_to_oh(rgb_array, class_df):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
     (#tiles, height, width, #classes). This is the inverse of oh_to_rgb().
