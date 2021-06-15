@@ -66,7 +66,7 @@ class ISPRS():
 
 def rgb_to_binary(rgb_array, class_df, name):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
-    (#tiles, height, width, 2). This is the inverse of oh_to_rgb().
+    (#tiles, height, width, 2). This is the inverse of binary_to_rgb().
 
     Args:
         rgb_array (ndarray): an array of all mask imagery, with shape (#tiles, height, width, depth)
@@ -80,14 +80,14 @@ def rgb_to_binary(rgb_array, class_df, name):
     rgb_list = class_df[['r', 'g', 'b']].values.tolist()
     rgb_list_of_tuples = []
 
-    identity = np.identity(n_classes, dtype=np.uint8)
+    identity = np.identity(2, dtype=np.uint8)
     one_hot_list = []
 
     n_tiles = rgb_array.shape[0]
     tile_height = rgb_array.shape[1]
     tile_width = rgb_array.shape[2]
 
-    oh_array = np.zeros((n_tiles, tile_height, tile_width, n_classes))
+    oh_array = np.zeros((n_tiles, tile_height, tile_width, 2))
 
     for rgb in rgb_list:
         rgb_tuple = tuple(rgb)
@@ -110,6 +110,33 @@ def rgb_to_binary(rgb_array, class_df, name):
 
     oh_array = oh_array.astype(np.uint8)
     return oh_array
+
+def binary_to_rgb(bin_array):
+    """This function takes the one-hot encoded array created by rgb_to_binary(), and returns an RGB array. Output will have
+        the shape (#tiles, height, width, 3). This is not the inverse of rgb_to_binary, because this function returns
+        only two RGB tuples: black (0, 0, 0) and white (255, 255, 255). Hence, the two functions are only inverses if
+        the mask imagery is binary to begin with.
+
+        Args:
+            oh_array (ndarray): an array of the one-hot encoded imagery, with shape (#tiles, height, width, #classes).
+            """
+
+    rgb_list = [(0, 0, 0), (255, 255, 255)]
+    one_hot_list = [(1, 0), (0, 1)]
+    oh_rgb_dict = dict(zip(one_hot_list, rgb_list))
+
+    n_tiles, tile_height, tile_width = [bin_array.shape[0], bin_array.shape[1], bin_array.shape[2]]
+    rgb_array = np.zeros((n_tiles, tile_height, tile_width, 3))
+
+    for s in range(n_tiles):
+        # if s % 100 == 0:
+        #     print(str(s) + ' tiles complete out of ' + str(n_tiles))
+        for h in range(tile_height):
+            for w in range(tile_width):
+                rgb_array[s, h, w] = np.array(oh_rgb_dict[tuple(bin_array[s, h, w])])
+
+    rgb_array = rgb_array.astype(np.uint8)
+    return rgb_array
 
 def rgb_to_oh(rgb_array, class_df):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
@@ -151,6 +178,7 @@ def rgb_to_oh(rgb_array, class_df):
 
     oh_array = oh_array.astype(np.uint8)
     return oh_array
+
 
 
 def oh_to_rgb(oh_array, class_df):
