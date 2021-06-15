@@ -66,7 +66,8 @@ class ISPRS():
 
 def rgb_to_binary(rgb_array, class_df, name):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
-    (#tiles, height, width, 2). This is the inverse of binary_to_rgb().
+    (#tiles, height, width, 2). This is only the inverse of binary_to_rgb if the rgb_array is already a binary
+    classification.
 
     Args:
         rgb_array (ndarray): an array of all mask imagery, with shape (#tiles, height, width, depth)
