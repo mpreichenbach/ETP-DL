@@ -245,37 +245,38 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, preds, seed=0, num=5):
+def view_tiles(sats, masks, model_a, model_b, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
     Args:
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
-        preds (ndarray): the predicted images given by the model,
-        seed (int): if you want reproducibility, enter this here number,
+        pred_a (tf.Keras Model): first model to view images for,
+        pred_b (tf.Keras Model): second model to view images for,
         num (int): the number of samples to show."""
-
-    # Fixing random state for reproducibility
-    if seed:
-        np.random.seed(seed)
 
     choices = np.random.randint(0, len(sats), num)
 
-    fig, axs = plt.subplots(num, 3)
+    fig, axs = plt.subplots(num, 4)
+    pred_a = binary_to_rgb(vec_to_oh(model_a.predict(sats[choices])))
+    pred_b = binary_to_rgb(vec_to_oh(model_b.predict(sats[choices])))
 
-    for a in range(num):
-        if a == 0:
-            axs[a, 0].imshow(sats[choices[a]])
-            axs[a, 0].set_title("Satellite")
-            axs[a, 1].imshow(masks[choices[a]])
-            axs[a, 1].set_title("Ground Truth")
-            axs[a, 2].imshow(preds[a])
-            axs[a, 2].set_title("Prediction")
+    for i in range(num):
+        if i == 0:
+            axs[i, 0].imshow(sats[choices[i]])
+            axs[i, 0].set_title("Satellite")
+            axs[i, 1].imshow(masks[choices[i]])
+            axs[i, 1].set_title("Ground Truth")
+            axs[i, 2].imshow(pred_a[i])
+            axs[i, 2].set_title("First Model")
+            axs[i, 3].imshow(pred_b[i])
+            axs[i, 3].set_title("Second Model")
         else:
-            axs[a, 0].imshow(sats[choices[a]])
-            axs[a, 1].imshow(masks[choices[a]])
-            axs[a, 2].imshow(preds[choices[a]])
+            axs[i, 0].imshow(sats[choices[i]])
+            axs[i, 1].imshow(masks[choices[i]])
+            axs[i, 2].imshow(pred_a[i])
+            axs[i, 3].imshow(pred_b[i])
 
     plt.setp(axs, xticks=[], yticks=[])
     plt.tight_layout()
