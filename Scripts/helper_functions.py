@@ -111,7 +111,7 @@ def rgb_to_binary(rgb_array, class_df, name):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def binary_to_rgb(bin_array):
+def binary_to_bw(bin_array):
     """This function takes the one-hot encoded array created by rgb_to_binary(), and returns an RGB array. Output will have
         the shape (#tiles, height, width, 3). This is not the inverse of rgb_to_binary, because this function returns
         only two RGB tuples: black (0, 0, 0) and white (255, 255, 255). Hence, the two functions are only inverses if
@@ -245,7 +245,7 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, model_a, model_b, num=5):
+def view_tiles(sats, masks, model_a, model_b, class_df, bin_class, binary=False, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -254,27 +254,38 @@ def view_tiles(sats, masks, model_a, model_b, num=5):
         masks (ndarray): the associated collection of ground-truth masks,
         pred_a (tf.Keras Model): first model to view images for,
         pred_b (tf.Keras Model): second model to view images for,
+        binary (Boolean): if true, masks will be converted to a binary mask,
+        class_df (pd.DataFrame): the dataframe containing RGB values for mask,
+        bin_class (string): the name from class_df of the class to keep if binary=True,
         num (int): the number of samples to show."""
 
     choices = np.random.randint(0, len(sats), num)
 
+    s_choices = sats[choices]
+
+    if binary:
+        m_choices = binary_to_bw(rgb_to_binary(masks[choices], class_df, name=bin_class))
+    else:
+        m_choices = masks[choices]
+
+    pred_a = binary_to_bw(vec_to_oh(model_a.predict(sats[choices])))
+    pred_b = binary_to_bw(vec_to_oh(model_b.predict(sats[choices])))
+
     fig, axs = plt.subplots(num, 4)
-    pred_a = binary_to_rgb(vec_to_oh(model_a.predict(sats[choices])))
-    pred_b = binary_to_rgb(vec_to_oh(model_b.predict(sats[choices])))
 
     for i in range(num):
         if i == 0:
-            axs[i, 0].imshow(sats[choices[i]])
+            axs[i, 0].imshow(s_choices[i])
             axs[i, 0].set_title("Satellite")
-            axs[i, 1].imshow(masks[choices[i]])
+            axs[i, 1].imshow(m_choices[i])
             axs[i, 1].set_title("Ground Truth")
             axs[i, 2].imshow(pred_a[i])
             axs[i, 2].set_title("First Model")
             axs[i, 3].imshow(pred_b[i])
             axs[i, 3].set_title("Second Model")
         else:
-            axs[i, 0].imshow(sats[choices[i]])
-            axs[i, 1].imshow(masks[choices[i]])
+            axs[i, 0].imshow(s_choices[i])
+            axs[i, 1].imshow(m_choices[i])
             axs[i, 2].imshow(pred_a[i])
             axs[i, 3].imshow(pred_b[i])
 
