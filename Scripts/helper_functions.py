@@ -7,10 +7,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
     MaxPooling2D, UpSampling2D
 
-
-#####
-# Dataset Classes
-#####
+# ----------------------------------------------------
+# Datasets
+# ----------------------------------------------------
 
 class DigitalGlobeDataset():
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
@@ -35,14 +34,14 @@ class DigitalGlobeDataset():
 
         return sats, masks, oh_encoded
 
-class ISPRS():
-    """ISPRS semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
+class Potsdam():
+    """ISPRS Potsdam semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
     def __init__(self):
         self.loc = 'This is Potsdam imagery.'
 
     def load(self, dim, masks=False, ir=False):
-        data_path = 'Data/ISPRS/Numpy Arrays/'
+        data_path = 'Data/ISPRS Potsdam/Numpy Arrays'
 
         self.data_path = data_path
         self.dim = dim
@@ -180,8 +179,6 @@ def rgb_to_oh(rgb_array, class_df):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-
-
 def oh_to_rgb(oh_array, class_df):
     """This function takes the one-hot encoded array created by rgb_to_oh(), and returns an RGB array. Output will have
     the shape (#tiles, height, width, 3). This is also the inverse of oh_to_rgb().
@@ -223,7 +220,6 @@ def oh_to_rgb(oh_array, class_df):
     rgb_array = rgb_array.astype(np.uint8)
     return rgb_array
 
-
 def vec_to_oh(array, progress=False, cycle=100):
     """This function takes "array" and converts its depth vectors to one-hot encodings.
 
@@ -248,7 +244,6 @@ def vec_to_oh(array, progress=False, cycle=100):
 
     oh_array = oh_array.astype(np.uint8)
     return oh_array
-
 
 def view_tiles(sats, masks, preds, seed=0, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
@@ -286,6 +281,9 @@ def view_tiles(sats, masks, preds, seed=0, num=5):
     plt.tight_layout()
     plt.show()
 
+# ----------------------------------------------------
+# Models
+# ----------------------------------------------------
 
 def unet_main_block(m, n_filters, dim, bn, do_rate):
     """The primary convolutional block in the UNet network.
@@ -305,10 +303,9 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
     n = BatchNormalization()(n) if bn else n
     return n
 
-
-# ----------------------------------------------------
-# Models
-# ----------------------------------------------------
+#####
+# Unet
+#####
 
 class Unet:
     def __init__(self, classes):
@@ -371,10 +368,9 @@ class Unet:
 
         return cnn
 
-
-# ----------------------------------------------------
-# DeepWaterMask
-# ----------------------------------------------------
+#####
+# DeepWaterMap
+#####
 
 class DeepWaterMap:
     """Implements the binary water-detection CNN, with code and data given here:
