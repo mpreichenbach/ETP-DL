@@ -3,13 +3,9 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import tensorflow as tf
-from tensorflow.keras import mixed_precision
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
     MaxPooling2D, UpSampling2D
-
-# ensure that models used mixed-precision (float16 and float32); this speeds up training and inference on newer GPUs.
-mixed_precision.set_global_policy('mixed_float16')
 
 # ----------------------------------------------------
 # Datasets
