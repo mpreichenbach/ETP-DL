@@ -37,30 +37,32 @@ class DigitalGlobeDataset():
 class Potsdam():
     """ISPRS Potsdam semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
-    def __init__(self, bin_class, binary=False):
+    def __init__(self, bin_class):
         self.loc = 'This is Potsdam imagery.'
-        if binary:
+        self.data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
+        if bin_class:
             self.binary = 'This is binary classification imagery for the class ' + '\'' + bin_class + '\'.'
             self.bin_class = bin_class
 
-    def load(self, dim, masks=False, ir=False, binary=False):
-        data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
-
-        self.data_path = data_path
+    def load(self, dim, masks=False, ir=False):
         self.dim = dim
 
         if ir:
-            s = np.load(data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
+            s = np.load(self.data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
+            s = s.astype(np.float32)
+            s /= 255
         else:
-            s = np.load(data_path + 'RGB_tiles_' + str(dim) + '.npy')
+            s = np.load(self.data_path + 'RGB_tiles_' + str(dim) + '.npy')
+            s = s.astype(np.float32)
+            s /= 255
 
-        if binary:
-            enc = np.load(data_path + 'Binary Classification/' + str(self.bin_class) + '_' + str(self.dim) + '.npy')
+        if self.bin_class:
+            enc = np.load(self.data_path + 'Binary Classification/' + str(self.bin_class) + '_' + str(self.dim) + '.npy')
         else:
-            enc = np.load(data_path + 'Encoded_tiles_' + str(dim) + '.npy')
+            enc = np.load(self.data_path + 'Encoded_tiles_' + str(dim) + '.npy')
 
         if masks:
-            m = np.load(data_path + 'Label_tiles_' + str(dim) + '.npy')
+            m = np.load(self.data_path + 'Label_tiles_' + str(dim) + '.npy')
             return [s, m, enc]
         else:
             return [s, enc]
@@ -315,11 +317,11 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
 
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
     n = Activation('relu')(n)
-    n = Dropout('relu')(n) if do_rate else n
+    n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
     n = Activation('relu')(n)
-    n = Dropout('relu')(n) if do_rate else n
+    n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     return n
 
