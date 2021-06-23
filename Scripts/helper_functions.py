@@ -3,9 +3,13 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import tensorflow as tf
+from tensorflow.keras import mixed_precision
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
     MaxPooling2D, UpSampling2D
+
+# ensure that models used mixed-precision (float16 and float32); this speeds up training and inference on newer GPUs.
+mixed_precision.set_global_policy('mixed_float16')
 
 # ----------------------------------------------------
 # Datasets
@@ -108,8 +112,8 @@ def rgb_to_binary(rgb_array, class_df, name):
     rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
 
     for s in range(n_tiles):
-        # if s % 100 == 0:
-        #     print(str(s) + ' complete out of ' + str(n_tiles))
+        if s % 100 == 0:
+            print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
@@ -466,34 +470,3 @@ class DeepWaterMap:
         model.compile(optimizer=optimizer, loss=loss)
 
         return model
-
-#####
-# Experiment
-#####
-
-import gc
-
-unet = Unet(2)
-
-sats = np.load('Data/ISPRS Potsdam/Numpy Arrays/RGB_tiles_256.npy')
-sats = sats[0:2000]
-sats = sats.astype(np.float16)
-sats /= 255
-
-masks = np.load('Data/ISPRS Potsdam/Numpy Arrays/Label_tiles_256.npy')
-masks = masks[0:2000]
-
-enc = np.load('Data/ISPRS Potsdam/Numpy Arrays/Binary Classification/Buildings_256.npy')
-enc = enc[0:2000]
-
-class_df = pd.read_csv('Data/ISPRS Potsdam/Numpy Arrays/class_dict.csv')
-
-gc.collect()
-
-TeamRose = unet.model([512, 512, 3], n_filters=16, levels=4, filter_dims=5, do_rate=0.2)
-TeamMatt = unet.model([512, 512, 3], n_filters=16, levels=4, filter_dims=3, do_rate=0.2)
-
-TeamRose.fit(sats, enc, batch_size=8, epochs=1)
-TeamMatt.fit(sats, enc, batch_size=8, epochs=1)
-
-view_tiles(sats, masks, TeamRose, 'TeamRose', TeamMatt, 'TeamMatt', class_df, bin_class='building', binary=True)
