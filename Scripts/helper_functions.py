@@ -37,27 +37,33 @@ class DigitalGlobeDataset():
 class Potsdam():
     """ISPRS Potsdam semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
-    def __init__(self):
+    def __init__(self, bin_class, binary=False):
         self.loc = 'This is Potsdam imagery.'
+        if binary:
+            self.binary = 'This is binary classification imagery for the class ' + '\'' + bin_class + '\'.'
+            self.bin_class = bin_class
 
-    def load(self, dim, masks=False, ir=False):
-        data_path = 'Data/ISPRS Potsdam/Numpy Arrays'
+    def load(self, dim, masks=False, ir=False, binary=False):
+        data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
 
         self.data_path = data_path
         self.dim = dim
 
         if ir:
-            sats = np.load(data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
+            s = np.load(data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
         else:
-            sats = np.load(data_path + 'RGB_tiles_' + str(dim) + '.npy')
+            s = np.load(data_path + 'RGB_tiles_' + str(dim) + '.npy')
 
-        enc = np.load(data_path + 'Encoded_tiles_' + str(dim) + '.npy')
+        if binary:
+            enc = np.load(data_path + 'Binary Classification/' + str(self.bin_class) + '_' + str(self.dim) + '.npy')
+        else:
+            enc = np.load(data_path + 'Encoded_tiles_' + str(dim) + '.npy')
 
         if masks:
-            masks = np.load(data_path + 'Label_tiles_' + str(dim) + '.npy')
-            return [sats, masks, enc]
+            m = np.load(data_path + 'Label_tiles_' + str(dim) + '.npy')
+            return [s, m, enc]
         else:
-            return [sats, enc]
+            return [s, enc]
 
 #####
 # Helper functions
@@ -102,8 +108,8 @@ def rgb_to_binary(rgb_array, class_df, name):
     rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
 
     for s in range(n_tiles):
-        if s % 100 == 0:
-            print(str(s) + ' complete out of ' + str(n_tiles))
+        # if s % 100 == 0:
+        #     print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
@@ -245,7 +251,7 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, model_a, model_b, class_df, bin_class, binary=False, num=5):
+def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_class, binary=False, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -280,9 +286,9 @@ def view_tiles(sats, masks, model_a, model_b, class_df, bin_class, binary=False,
             axs[i, 1].imshow(m_choices[i])
             axs[i, 1].set_title("Ground Truth")
             axs[i, 2].imshow(pred_a[i])
-            axs[i, 2].set_title("First Model")
+            axs[i, 2].set_title(str(a_name))
             axs[i, 3].imshow(pred_b[i])
-            axs[i, 3].set_title("Second Model")
+            axs[i, 3].set_title(str(b_name))
         else:
             axs[i, 0].imshow(s_choices[i])
             axs[i, 1].imshow(m_choices[i])
@@ -347,8 +353,6 @@ class Unet:
             filter_dim_list = list(map(int, filter_dims))
             assert (levels == len(filter_dim_list)), 'Specify the same number of filter dimensions as levels.'
 
-        print(filter_dim_list)
-
         layer_dict = {}
 
         # downsampling path
@@ -360,8 +364,6 @@ class Unet:
             layer_dict['level_' + str(level)] = x
             x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
             n_filters *= 2
-
-        print(layer_dict)
 
         # lowest level
         x = unet_main_block(x, n_filters=n_filters, dim=filter_dim_list[-1], bn=bn, do_rate=do_rate)
@@ -464,3 +466,34 @@ class DeepWaterMap:
         model.compile(optimizer=optimizer, loss=loss)
 
         return model
+
+#####
+# Experiment
+#####
+
+import gc
+
+unet = Unet(2)
+
+sats = np.load('Data/ISPRS Potsdam/Numpy Arrays/RGB_tiles_256.npy')
+sats = sats[0:2000]
+sats = sats.astype(np.float16)
+sats /= 255
+
+masks = np.load('Data/ISPRS Potsdam/Numpy Arrays/Label_tiles_256.npy')
+masks = masks[0:2000]
+
+enc = np.load('Data/ISPRS Potsdam/Numpy Arrays/Binary Classification/Buildings_256.npy')
+enc = enc[0:2000]
+
+class_df = pd.read_csv('Data/ISPRS Potsdam/Numpy Arrays/class_dict.csv')
+
+gc.collect()
+
+TeamRose = unet.model([512, 512, 3], n_filters=16, levels=4, filter_dims=5, do_rate=0.2)
+TeamMatt = unet.model([512, 512, 3], n_filters=16, levels=4, filter_dims=3, do_rate=0.2)
+
+TeamRose.fit(sats, enc, batch_size=8, epochs=1)
+TeamMatt.fit(sats, enc, batch_size=8, epochs=1)
+
+view_tiles(sats, masks, TeamRose, 'TeamRose', TeamMatt, 'TeamMatt', class_df, bin_class='building', binary=True)
