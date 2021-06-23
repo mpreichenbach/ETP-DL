@@ -313,11 +313,13 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
             bn (Boolean): whether to include batch normalization after each convolution,
             do_rate (float): the rate to perform dropout before each convolution."""
 
-    n = Dropout(do_rate)(m)
-    n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
+    n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
+    n = Activation('relu')(n)
+    n = Dropout('relu')(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
-    n = Dropout(do_rate)(n) if do_rate else n
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
+    n = Activation('relu')(n)
+    n = Dropout('relu')(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     return n
 
