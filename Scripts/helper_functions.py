@@ -4,6 +4,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from tensorflow.keras.applications import vgg16, vgg19
 from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
     MaxPooling2D, UpSampling2D
 
@@ -110,8 +111,8 @@ def rgb_to_binary(rgb_array, class_df, name):
     rgb_oh_dict = dict(zip(rgb_list_of_tuples, one_hot_list))
 
     for s in range(n_tiles):
-        if s % 100 == 0:
-            print(str(s) + ' complete out of ' + str(n_tiles))
+        # if s % 100 == 0:
+        #     print(str(s) + ' complete out of ' + str(n_tiles))
         for h in range(tile_height):
             for w in range(tile_width):
                 oh_array[s, h, w] = np.array(rgb_oh_dict[tuple(rgb_array[s, h, w])])
@@ -386,87 +387,34 @@ class Unet:
 
         return cnn
 
+
 #####
-# DeepWaterMap
+# VGG 16 pretrained feature extraction
 #####
 
-class DeepWaterMap:
-    """Implements the binary water-detection CNN, with code and data given here:
-    https://github.com/isikdogan/deepwatermap. The original implementation put BN layers before the ReLU activation;
-    this order is now believed to perform worse. I have updated the architecture to include ReLU before BN."""
+model = vgg16.VGG16(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
+model.trainable = False
 
-    def __init__(self, im_dim):
-        self.im_dim = im_dim
+x = model.output
+x = UpSampling2D(size=(2, 2))(x)
+x = Concatenate(axis=-1)([x, model.layers[-5].output])
+filters = int(model.output.shape[-1] / 2)
+x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+x = UpSampling2D(size=(2, 2))(x)
+x = Concatenate(axis=-1)([x, model.layers[-9].output])
+filters = int(filters / 2)
+x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+x = UpSampling2D(size=(2, 2))(x)
+x = Concatenate(axis=-1)([x, model.layers[-13].output])
+filters = int(filters / 2)
+x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+x = UpSampling2D(size=(2, 2))(x)
+x = Concatenate(axis=-1)([x, model.layers[-16].output])
+filters = int(filters / 2)
+x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+x = UpSampling2D(size=(2, 2))(x)
 
-    def model(self, min_width = 4, optimizer='Adam', loss='binary crossentropy'):
-        inputs = Input(shape=[None, None, 6])
+output_img = Conv2D(2, 1, padding='same', activation='softmax')(x)
 
-        def conv_block(x, num_filters, kernel_size, stride=1):
-            x = Conv2D(
-                filters=num_filters,
-                kernel_size=kernel_size,
-                kernel_initializer='he_uniform',
-                strides=stride,
-                padding='same',
-                activation='relu',
-                use_bias=False)(x)
-            x = BatchNormalization()(x)
-
-            return x
-        def downscaling_unit(x):
-            num_filters = int(x.get_shape()[-1]) * 4
-            x_1 = conv_block(x, num_filters, kernel_size=5, stride=2)
-            x_2 = conv_block(x_1, num_filters, kernel_size=3, stride=1)
-            x = Add()([x_1, x_2])
-
-            return x
-
-        def upscaling_unit(x):
-            num_filters = int(x.get_shape()[-1]) // 4
-            # is the following lambda layer better or worse than UpSampling2D?
-            x = Lambda(lambda x: tf.nn.depth_to_space(x, 2))(x)
-            x_1 = conv_block(x, num_filters, kernel_size=3)
-            x_2 = conv_block(x_1, num_filters, kernel_size=3)
-            x = Add()([x_1, x_2])
-
-            return x
-
-        def bottleneck_unit(x):
-            num_filters = int(x.get_shape()[-1])
-            x_1 = conv_block(x, num_filters, kernel_size=3)
-            x_2 = conv_block(x_1, num_filters, kernel_size=3)
-            x = Add()([x_1, x_2])
-
-            return x
-
-        # model flow
-        skip_connections = []
-        num_filters = min_width
-
-        # first layer
-        x = conv_block(inputs, num_filters, kernel_size=1)
-        skip_connections.append(x)
-
-        # encoder
-        for i in range(4):
-            x = downscaling_unit(x)
-            skip_connections.append(x)
-
-        # bottleneck layer
-        x = bottleneck_unit(x)
-
-        # decoder
-        for i in range(4):
-            # do they really want to add the layers, instead of a concatenation?
-            x = Add()([x, skip_connections.pop()])
-            x = upscaling_unit(x)
-
-        # last layer
-        x = Add()([x, skip_connections.pop()])
-        x = conv_block(x, 1, kernel_size=1)
-        x = Activation('sigmoid')(x)
-
-        model = Model(inputs=inputs, outputs=x)
-        model.compile(optimizer=optimizer, loss=loss)
-
-        return model
+cnn_pt = Model(model.input, output_img)
+cnn_pt.compile(optimizer='Adam', loss='binary_crossentropy')
