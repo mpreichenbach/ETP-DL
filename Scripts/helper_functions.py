@@ -68,6 +68,47 @@ class Potsdam():
         else:
             return [s, enc]
 
+class SemSeg:
+    """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
+
+    def __init__(self, dim, ir=False, binary_class=None):
+        self.dim = dim
+        self.ir = ir
+        self.data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
+        self.class_df = pd.read_csv(self.data_path + 'class_df.csv')
+
+        if binary_class:
+            self.classes = [binary_class]
+        else:
+            self.classes = (self.class_df)['name'].tolist()
+
+        if ir:
+            if binary_class:
+                self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' binary ' + binary_class + ' imagery, ' + \
+                               'with infrared channel.'
+            else:
+                self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' binary ' + binary_class + ' imagery.'
+        else:
+            self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' imagery'
+
+    def load_data(self, masks=True):
+        if self.ir:
+            s = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
+        else:
+            s = np.load(self.data_path + 'RGB_tiles_' + str(self.dim) + '.npy')
+
+        if len(self.classes) == 1:
+            enc = np.load(self.data_path + 'Binary Classification/' + str(self.classes[0]) + '_' + str(self.dim) + '.npy')
+        else:
+            enc = np.load(self.data_path + 'Encoded_tiles_' + str(self.dim) + '.npy')
+
+        if masks:
+            m = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
+            return [s, m, enc]
+        else:
+            return [s, enc]
+
+
 #####
 # Helper functions
 #####
@@ -397,24 +438,25 @@ model.trainable = False
 
 x = model.output
 x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model.layers[-5].output])
+# x = Concatenate(axis=-1)([x, model.layers[-5].output])
 filters = int(model.output.shape[-1] / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model.layers[-9].output])
+# x = Concatenate(axis=-1)([x, model.layers[-9].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model.layers[-13].output])
+# x = Concatenate(axis=-1)([x, model.layers[-13].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model.layers[-16].output])
+# x = Concatenate(axis=-1)([x, model.layers[-16].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
 
 output_img = Conv2D(2, 1, padding='same', activation='softmax')(x)
 
-cnn_pt = Model(model.input, output_img)
-cnn_pt.compile(optimizer='Adam', loss='binary_crossentropy')
+cnn_pt_no_cat = Model(model.input, output_img)
+cnn_pt_no_cat.compile(optimizer='Adam', loss='binary_crossentropy')
+
