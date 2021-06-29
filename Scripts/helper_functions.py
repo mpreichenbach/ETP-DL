@@ -71,6 +71,7 @@ class Potsdam():
 class SemSeg:
     """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
 
+    # initialization properties
     def __init__(self, dim, ir=False, binary_class=None):
         self.dim = dim
         self.ir = ir
@@ -91,6 +92,14 @@ class SemSeg:
         else:
             self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' imagery'
 
+        # the following method is filled from https://keras.io/api/applications/ and may be updated in the future
+        self.pretrained_models =['Xception', 'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2',
+                                 'ResNet101V2', 'ResNet152V2', 'InceptionV3', 'InceptionResNetV2', 'MobileNet',
+                                 'MobileNetV2', 'DenseNet121', 'DenseNet169', 'DenseNet201', 'NASNetMobile',
+                                 'NASNetLarge', 'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
+                                 'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
+
+    # if you want separate objects for the data, call this function
     def load_data(self, masks=True):
         if self.ir:
             s = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
@@ -107,6 +116,11 @@ class SemSeg:
             return [s, m, enc]
         else:
             return [s, enc]
+
+    class Model:
+        def __init__(self, pretrained=None):
+            self.pretrained = pretrained
+
 
 
 #####
