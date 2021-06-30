@@ -358,7 +358,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'VGG16':
         input_proc = vgg16.preprocess_input(input)
-        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -384,8 +385,10 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
         # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(model_pt.input, output_img)
+        cnn_pt = Model(input_model.input, output_img)
         cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
 
     if backbone == 'VGG19':
         input_proc = vgg19.preprocess_input(input)
