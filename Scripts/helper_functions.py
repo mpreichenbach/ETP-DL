@@ -4,8 +4,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import vgg16, vgg19
-from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
+from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
+from tensorflow.keras.layers import Activation, BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, \
     MaxPooling2D, UpSampling2D
 
 # ----------------------------------------------------
@@ -318,7 +318,13 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def pt_model(backbone, input_shape, preprocessing=True, concatenate=True, opt='Adam', loss='categorical_crossentropy'):
+def rescaling_layer(input, factor=1./255):
+    """Keras has an experimental preprocesing layer that will do this, but requires upgrading the TF version, which will
+    break the GPU support that Anaconda set up."""
+    output = Lambda(lambda t: factor * t)(input)
+    return output
+
+def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', loss='categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
@@ -332,13 +338,99 @@ def pt_model(backbone, input_shape, preprocessing=True, concatenate=True, opt='A
                         'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7'. These are the names
                         given at https://keras.io/api/applications/, which may be updated in the future.
         input_shape (tuple): the (height, width, depth) values for the input imagery.
-        preprocessing (Boolean): whether to include a preprocessing layer that divides the input by 255.
+        n_classes (int): the number of classes to predict.
         concatenate (Boolean): whether to concatenate max-pooling layers from the downsampling to the first tensor of
                                the same shape in the upsampling path.
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    x =
+    input = Input(input_shape)
+
+    # implements a model with Xception backbone
+    if backbone == 'Xception':
+        input_proc = xception.preprocess_input(input)
+        model_pt = xception.Xception(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'VGG16':
+        input_proc = vgg16.preprocess_input(input)
+        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'VGG19':
+        input_proc = vgg19.preprocess_input(input)
+        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet50':
+        input_proc = resnet.preprocess_input(input)
+        model_pt = resnet.Resnet50(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet101':
+        input_proc = resnet.preprocess_input(input)
+        model_pt = resnet.ResNet101(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet152':
+        input_proc = resnet.preprocess_input(input)
+        model_pt = resnet.ResNet152(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet50V2':
+        input_proc = resnet_v2.preprocess_input(input)
+        model_pt = resnet_v2.ResNet50V2(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet101V2':
+        input_proc = resnet_v2.preprocess_input(input)
+        model_pt = resnet_v2.ResNet101V2(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+    if backbone == 'ResNet152V2':
+        input_proc = resnet_v2.preprocess_input(input)
+        model_pt = resnet_v2.ResNet152V2(include_top=False, input_tensor=input_proc)
+        model_pt.trainable = False
+
+        x = model_pt.output
+
+        # upsampling path
+
+
+
+
 
 
 def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_class, binary=False, num=5):
@@ -348,8 +440,8 @@ def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_clas
     Args:
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
-        pred_a (tf.Keras Model): first model to view images for,
-        pred_b (tf.Keras Model): second model to view images for,
+        model_a (tf.Keras Model): first model to view images for,
+        model_b (tf.Keras Model): second model to view images for,
         binary (Boolean): if true, masks will be converted to a binary mask,
         class_df (pd.DataFrame): the dataframe containing RGB values for mask,
         bin_class (string): the name from class_df of the class to keep if binary=True,
@@ -395,20 +487,18 @@ def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_clas
 
 def unet_main_block(m, n_filters, dim, bn, do_rate):
     """The primary convolutional block in the UNet network.
-        Args:
 
-            m (tensorflow layer): this is the previous layer in the network,
-            n_filters (int): number of filters in each convolution,
-            dim (int): the dimension of the filters,
-            bn (Boolean): whether to include batch normalization after each convolution,
-            do_rate (float): the rate to perform dropout before each convolution."""
+        Args:
+            m (Keras layer): this is the previous layer in the network,
+            n_filters (int): number of filters in each convolutional layer,
+            dim (int): the height/width dimension of the filters),
+            bn (Boolean): whether to include batch normalization
+            do_rate (float): the rate to perform dropout after each convolution."""
 
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
-    n = Activation('relu')(n)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
-    n = Activation('relu')(n)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     return n
@@ -474,35 +564,41 @@ class Unet:
 
         return cnn
 
+model_pt = vgg16.VGG16(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
 
-#####
-# VGG 16 pretrained feature extraction
-#####
+# This line ensures that the pretrained weights won't change while you train the new layers. If model.trainable=True,
+# the pretrained weights would get knocked out of whack and be less useful because the values in the new layers change
+# much more during training.
+model_pt.trainable = False
 
-model = vgg16.VGG16(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
-model.trainable = False
+# This line gives the output tensor of the pretrained model, to be used as first input in the new layers.
+x = model_pt.output
 
-x = model.output
+# Here begins the upsampling path. I won't explain the architecture in detail here, but I'm happy to do so in a chat.
 x = UpSampling2D(size=(2, 2))(x)
-# x = Concatenate(axis=-1)([x, model.layers[-5].output])
-filters = int(model.output.shape[-1] / 2)
+x = Concatenate(axis=-1)([x, model_pt.layers[-5].output])
+filters = int(model_pt.output.shape[-1] / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-# x = Concatenate(axis=-1)([x, model.layers[-9].output])
+x = Concatenate(axis=-1)([x, model_pt.layers[-9].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-# x = Concatenate(axis=-1)([x, model.layers[-13].output])
+x = Concatenate(axis=-1)([x, model_pt.layers[-13].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
-# x = Concatenate(axis=-1)([x, model.layers[-16].output])
+x = Concatenate(axis=-1)([x, model_pt.layers[-16].output])
 filters = int(filters / 2)
 x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
 x = UpSampling2D(size=(2, 2))(x)
 
+# Having 2 filters in this next layer means that the network is doing binary classification, and assumes that your
+# labeled training data is one-hot encoded.
 output_img = Conv2D(2, 1, padding='same', activation='softmax')(x)
 
-cnn_pt_no_cat = Model(model.input, output_img)
-cnn_pt_no_cat.compile(optimizer='Adam', loss='binary_crossentropy')
+# The next two lines create the full model, with the pretrained downsampling path, and new upsampling path.
+cnn_pt = Model(model_pt.input, output_img)
+cnn_pt.compile(optimizer='Adam', loss='binary_crossentropy')
 
+# at this point, call cnn_pt.fit() on your data like any other model.
