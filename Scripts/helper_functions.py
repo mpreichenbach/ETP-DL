@@ -349,7 +349,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
     # implements a model with Xception backbone
     if backbone == 'Xception':
         input_proc = xception.preprocess_input(input)
-        model_pt = xception.Xception(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = xception.Xception(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -392,7 +393,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'VGG19':
         input_proc = vgg19.preprocess_input(input)
-        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = vgg19.VGG19(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -401,7 +403,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet50':
         input_proc = resnet.preprocess_input(input)
-        model_pt = resnet.ResNet50(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet.ResNet50(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -410,7 +413,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet101':
         input_proc = resnet.preprocess_input(input)
-        model_pt = resnet.ResNet101(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet.ResNet101(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -419,7 +423,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet152':
         input_proc = resnet.preprocess_input(input)
-        model_pt = resnet.ResNet152(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet.ResNet152(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -428,7 +433,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet50V2':
         input_proc = resnet_v2.preprocess_input(input)
-        model_pt = resnet_v2.ResNet50V2(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet_v2.ResNet50V2(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -437,7 +443,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet101V2':
         input_proc = resnet_v2.preprocess_input(input)
-        model_pt = resnet_v2.ResNet101V2(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet_v2.ResNet101V2(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -446,7 +453,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet152V2':
         input_proc = resnet_v2.preprocess_input(input)
-        model_pt = resnet_v2.ResNet152V2(include_top=False, input_tensor=input_proc)
+        input_model = Model(input, input_proc)
+        model_pt = resnet_v2.ResNet152V2(include_top=False, input_tensor=input_model.input)
         model_pt.trainable = False
 
         x = model_pt.output
