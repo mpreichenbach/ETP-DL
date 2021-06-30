@@ -364,6 +364,28 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
+        filters = int(model_pt.output.shape[-1] / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(model_pt.input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
 
     if backbone == 'VGG19':
         input_proc = vgg19.preprocess_input(input)
@@ -376,7 +398,7 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     if backbone == 'ResNet50':
         input_proc = resnet.preprocess_input(input)
-        model_pt = resnet.Resnet50(include_top=False, input_tensor=input_proc)
+        model_pt = resnet.ResNet50(include_top=False, input_tensor=input_proc)
         model_pt.trainable = False
 
         x = model_pt.output
@@ -564,41 +586,3 @@ class Unet:
 
         return cnn
 
-model_pt = vgg16.VGG16(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
-
-# This line ensures that the pretrained weights won't change while you train the new layers. If model.trainable=True,
-# the pretrained weights would get knocked out of whack and be less useful because the values in the new layers change
-# much more during training.
-model_pt.trainable = False
-
-# This line gives the output tensor of the pretrained model, to be used as first input in the new layers.
-x = model_pt.output
-
-# Here begins the upsampling path. I won't explain the architecture in detail here, but I'm happy to do so in a chat.
-x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model_pt.layers[-5].output])
-filters = int(model_pt.output.shape[-1] / 2)
-x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
-x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model_pt.layers[-9].output])
-filters = int(filters / 2)
-x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
-x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model_pt.layers[-13].output])
-filters = int(filters / 2)
-x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
-x = UpSampling2D(size=(2, 2))(x)
-x = Concatenate(axis=-1)([x, model_pt.layers[-16].output])
-filters = int(filters / 2)
-x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
-x = UpSampling2D(size=(2, 2))(x)
-
-# Having 2 filters in this next layer means that the network is doing binary classification, and assumes that your
-# labeled training data is one-hot encoded.
-output_img = Conv2D(2, 1, padding='same', activation='softmax')(x)
-
-# The next two lines create the full model, with the pretrained downsampling path, and new upsampling path.
-cnn_pt = Model(model_pt.input, output_img)
-cnn_pt.compile(optimizer='Adam', loss='binary_crossentropy')
-
-# at this point, call cnn_pt.fit() on your data like any other model.
