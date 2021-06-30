@@ -100,7 +100,7 @@ class SemSeg:
                                  'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
 
     # if you want separate objects for the data, call this function
-    def load_data(self, masks=True):
+    def load_data(self, masks=True, val_split=None):
         if self.ir:
             s = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
         else:
@@ -113,13 +113,9 @@ class SemSeg:
 
         if masks:
             m = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
-            return [s, m, enc]
-        else:
-            return [s, enc]
 
-    class Model:
-        def __init__(self, pretrained=None):
-            self.pretrained = pretrained
+        if val_split:
+            val_size = int(val_split * len(s))
 
 
 
@@ -308,6 +304,29 @@ def vec_to_oh(array, progress=False, cycle=100):
 
     oh_array = oh_array.astype(np.uint8)
     return oh_array
+
+def pt_model(backbone, input_shape, preprocessing=True, concatenate=True, opt='Adam', loss='categorical_crossentropy'):
+    """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
+    given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
+    and dropout layers.
+
+    Args:
+        backbone (str): provides the pretrained model to use for the downsampling path. Must be one of 'Xception',
+                        'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2', ResNet101V2',
+                        'ResNet152V2', 'InceptionV3', 'InceptionResNetV2', 'MobileNet',
+                        'MobileNetV2', 'DenseNet121', 'DenseNet169', 'DenseNet201', 'NASNetMobile', 'NASNetLarge',
+                        'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
+                        'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7'. These are the names
+                        given at https://keras.io/api/applications/, which may be updated in the future.
+        input_shape (tuple): the (height, width, depth) values for the input imagery.
+        preprocessing (Boolean): whether to include a preprocessing layer that divides the input by 255.
+        concatenate (Boolean): whether to concatenate max-pooling layers from the downsampling to the first tensor of
+                               the same shape in the upsampling path.
+       opt (str): the optimizer to use when compiling the model.
+       loss (str): the loss function to use when compiling the model."""
+
+    x =
+
 
 def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_class, binary=False, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
