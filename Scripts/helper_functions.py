@@ -12,7 +12,7 @@ from tensorflow.keras.layers import Activation, BatchNormalization, Concatenate,
 # Datasets
 # ----------------------------------------------------
 
-class DigitalGlobeDataset():
+class DigitalGlobeDataset:
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
      to floats, and provides the land-cover classifications in a dataframe."""
 
@@ -35,19 +35,15 @@ class DigitalGlobeDataset():
 
         return sats, masks, oh_encoded
 
-class Potsdam():
+class Potsdam:
     """ISPRS Potsdam semantic segmentation datasets, including Potsdam and Vaihingen separately or combined."""
 
-    def __init__(self, bin_class):
+    def __init__(self, bin_class=None):
         self.loc = 'This is Potsdam imagery.'
         self.data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
-        if bin_class:
-            self.binary = 'This is binary classification imagery for the class ' + '\'' + bin_class + '\'.'
-            self.bin_class = bin_class
+        self.bin_class = bin_class
 
     def load(self, dim, masks=False, ir=False):
-        self.dim = dim
-
         if ir:
             s = np.load(self.data_path + 'RGBIR_tiles_' + str(dim) + '.npy')
             s = s.astype(np.float32)
