@@ -152,8 +152,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    input = Input(input_shape, dtype=tf.uint8)
-    input = tf.cast(input, tf.float32)
+    input = Input(input_shape, dtype=tf.float32)
+    # input = tf.cast(input, tf.float32)
 
     # implements a model with Xception backbone
     if backbone == 'Xception':
@@ -166,18 +166,23 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         # upsampling path
 
+    #####
+    # VGG16
+    #####
     if backbone == 'VGG16':
         input_proc = vgg16.preprocess_input(input)
         input_model = Model(input, input_proc)
-        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_proc)
+        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_model.output)
         model_pt.trainable = False
 
         x = model_pt.output
 
         # upsampling path
+        filters = int(model_pt.output.shape[-1])
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
-        filters = int(model_pt.output.shape[-1] / 2)
+        filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
@@ -200,15 +205,47 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         return cnn_pt
 
+    #####
+    # VGG19
+    #####
     if backbone == 'VGG19':
         input_proc = vgg19.preprocess_input(input)
         input_model = Model(input, input_proc)
-        model_pt = vgg19.VGG19(include_top=False, input_tensor=input_model.input)
+        model_pt = vgg19.VGG19(include_top=False, input_tensor=input_model.output)
         model_pt.trainable = False
 
         x = model_pt.output
 
         # upsampling path
+        # put a convolutional block here; the downsampling path ends on a max-pooling layer
+        filters = int(model_pt.output.shape[-1])
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-1].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-6].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-11].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-19].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
 
     if backbone == 'ResNet50':
         input_proc = resnet.preprocess_input(input)
