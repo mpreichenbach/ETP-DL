@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from numpy import random
 import pandas as pd
 from matplotlib import pyplot as plt
 import tensorflow as tf
@@ -217,12 +218,7 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
-        # put a convolutional block here; the downsampling path ends on a max-pooling layer
         filters = int(model_pt.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-1].output]) if concatenate else x
-        filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-6].output]) if concatenate else x
@@ -246,6 +242,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         # compile the model with the chosen optimizer and loss functions
         cnn_pt = Model(input, output_img)
         cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
 
     if backbone == 'ResNet50':
         input_proc = resnet.preprocess_input(input)
@@ -509,11 +507,12 @@ def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_clas
 
     if binary:
         m_choices = binary_to_bw(rgb_to_binary(masks[choices], class_df, name=bin_class))
+        pred_a = binary_to_bw(vec_to_oh(model_a.predict(sats[choices])))
+        pred_b = binary_to_bw(vec_to_oh(model_b.predict(sats[choices])))
     else:
         m_choices = masks[choices]
-
-    pred_a = binary_to_bw(vec_to_oh(model_a.predict(sats[choices])))
-    pred_b = binary_to_bw(vec_to_oh(model_b.predict(sats[choices])))
+        pred_a = oh_to_rgb(vec_to_oh(model_a.predict(sats[choices])), class_df)
+        pred_b = oh_to_rgb(vec_to_oh(model_b.predict(sats[choices])), class_df)
 
     fig, axs = plt.subplots(num, 4)
 
