@@ -133,7 +133,7 @@ class SemSeg:
 # Helper functions
 #####
 
-def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', loss='categorical_crossentropy'):
+def pt_model(backbone, input_shape, n_classes, concatenate=True, do=0.2, opt='Adam', loss='categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
@@ -173,23 +173,23 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         # note that this path has no feature concatenation from the downsampling path; the Xception architecture doesn't
         # have obvious spots to do this, but I will continue thinking about it.
         filters = int(model_pt.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         # x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         # x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         # x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         # x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -212,23 +212,23 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         # upsampling path
         filters = int(model_pt.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -248,23 +248,23 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         # upsampling path
         filters = int(model_pt.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-6].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-11].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-19].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -292,19 +292,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
         # I've started with half the filters as before, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-95].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-137].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-171].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -329,19 +329,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
         # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-112].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-158].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-188].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -369,19 +369,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
         # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-265].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-307].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-341].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -404,19 +404,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
         # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-299].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-345].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-375].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -444,19 +444,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
         # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 4)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-395].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-477].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-511].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
@@ -479,19 +479,19 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
         # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 4)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-442].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-532].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-562].output]) if concatenate else x
         filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
