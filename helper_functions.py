@@ -290,12 +290,10 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
-        # I've reduced the number of starting filters compared to V1, because I get a GPU memory error upon
-        # instantiation otherwise.
-        # filters = int(model_pt.output.shape[-1])
-        # x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
+        # I've started with half the filters as before, because otherwise I get a GPU memory error
         filters = int(model_pt.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
@@ -341,7 +339,6 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     #####
     # ResNet50V2
-    # On Matt's RDE machine, a batch size of 16 is too big for training, but 8 works.
     #####
 
     if backbone == 'ResNet50V2':
@@ -355,7 +352,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
-        filters = int(model_pt.output.shape[-1])
+        # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
+        filters = int(model_pt.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-112].output]) if concatenate else x
