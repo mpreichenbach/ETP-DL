@@ -138,6 +138,9 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
 
+    When saving and loading models generated from this function, use the model.save_weights and model.load_weights
+    methods; model.save followed by tf.keras.models.load_model often does not work.
+
     Args:
         backbone (str): provides the pretrained model to use for the downsampling path. Must be one of 'Xception',
                         'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2', ResNet101V2',
