@@ -279,7 +279,6 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
     #####
     # ResNet50
-    # On Matt's RDE machine, a batch size of 16 is too big for training, but 8 works.
     #####
 
     if backbone == 'ResNet50':
@@ -291,11 +290,13 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
-        filters = int(model_pt.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        # I've reduced the number of starting filters compared to V1, because I get a GPU memory error upon
+        # instantiation otherwise.
+        # filters = int(model_pt.output.shape[-1])
+        # x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
-        filters = int(filters / 2)
+        filters = int(model_pt.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x, model_pt.layers[-95].output]) if concatenate else x
@@ -338,6 +339,11 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         # upsampling path
 
+    #####
+    # ResNet50V2
+    # On Matt's RDE machine, a batch size of 16 is too big for training, but 8 works.
+    #####
+
     if backbone == 'ResNet50V2':
         input_proc = resnet_v2.preprocess_input(input)
         input_model = Model(input, input_proc)
@@ -347,6 +353,30 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
+        filters = int(model_pt.output.shape[-1])
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-112].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-158].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-188].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
 
     if backbone == 'ResNet101V2':
         input_proc = resnet_v2.preprocess_input(input)
