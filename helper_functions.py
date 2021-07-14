@@ -154,9 +154,10 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
        loss (str): the loss function to use when compiling the model."""
 
     input = Input(input_shape, dtype=tf.float32)
-    # input = tf.cast(input, tf.float32)
 
-    # implements a model with Xception backbone
+    #####
+    # Xception
+    #####
     if backbone == 'Xception':
         input_proc = xception.preprocess_input(input)
         input_model = Model(input, input_proc)
@@ -166,6 +167,34 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
+        # note that this path has no feature concatenation from the downsampling path; as far as I can tell, the
+        # Xception architecture doesn't have obvious spots to do this, but I will continue thinking about it.
+        filters = int(model_pt.output.shape[-1])
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        # x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        # x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        # x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        # x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
 
     #####
     # VGG16
@@ -487,7 +516,7 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_class=None, binary=False, num=5):
+def view_tiles(sats, masks, choices, model_a, a_name, model_b, b_name, class_df, bin_class=None, binary=False, num=5):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -500,8 +529,6 @@ def view_tiles(sats, masks, model_a, a_name, model_b, b_name, class_df, bin_clas
         class_df (pd.DataFrame): the dataframe containing RGB values for mask,
         bin_class (string): the name from class_df of the class to keep if binary=True,
         num (int): the number of samples to show."""
-
-    choices = np.random.randint(0, len(sats), num)
 
     s_choices = sats[choices]
 
