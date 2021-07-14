@@ -200,7 +200,7 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         return cnn_pt
 
     #####
-    # VGG16
+    # VGG16 & VGG18
     #####
     if backbone == 'VGG16':
         input_proc = vgg16.preprocess_input(input)
@@ -238,9 +238,6 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
 
         return cnn_pt
 
-    #####
-    # VGG19
-    #####
     if backbone == 'VGG19':
         input_proc = vgg19.preprocess_input(input)
         input_model = Model(input, input_proc)
@@ -443,35 +440,21 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
-
-    #####
-    # ResNet50V2
-    #####
-
-    if backbone == 'ResNet50V2':
-        input_proc = resnet_v2.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet_v2.ResNet50V2(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
-
-        x = model_pt.output
-
-        # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
-        # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 2)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
+        # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
+        filters = int(model_pt.output.shape[-1] / 4)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-112].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, model_pt.layers[-395].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-158].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, model_pt.layers[-477].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-188].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, model_pt.layers[-511].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
@@ -492,6 +475,31 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
+        # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
+        filters = int(model_pt.output.shape[-1] / 4)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-442].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-532].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x, model_pt.layers[-562].output]) if concatenate else x
+        filters = int(filters / 2)
+        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
+        x = UpSampling2D(size=(2, 2))(x)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
 
 def rgb_to_binary(rgb_array, class_df, name):
     """This function performs a one-hot encoding of the mask numpy array. Output will have the shape
