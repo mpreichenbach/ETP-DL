@@ -170,8 +170,8 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, opt='Adam', los
         x = model_pt.output
 
         # upsampling path
-        # note that this path has no feature concatenation from the downsampling path; as far as I can tell, the
-        # Xception architecture doesn't have obvious spots to do this, but I will continue thinking about it.
+        # note that this path has no feature concatenation from the downsampling path; the Xception architecture doesn't
+        # have obvious spots to do this, but I will continue thinking about it.
         filters = int(model_pt.output.shape[-1])
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=0.2)
         x = UpSampling2D(size=(2, 2))(x)
