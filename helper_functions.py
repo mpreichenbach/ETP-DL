@@ -690,19 +690,23 @@ def view_tiles(sats, masks, choices, model_a, a_name, model_b, b_name, class_df,
     Args:
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
-        model_a (tf.Keras Model): first model to view images for,
-        model_b (tf.Keras Model): second model to view images for,
-        binary (Boolean): if true, masks will be converted to a binary mask,
+        model_a (Keras model): the first model to compare,
+        a_name (str): the name of model_a
+        model_b (Keras model): the second model to compare,
+        b_name (str): the name of model_b,
         class_df (pd.DataFrame): the dataframe containing RGB values for mask,
         bin_class (string): the name from class_df of the class to keep if binary=True,
+        binary (Boolean): if true, masks will be converted to a binary mask,
         num (int): the number of samples to show."""
 
     s_choices = sats[choices]
+    preds = []
 
     if binary:
         m_choices = binary_to_bw(rgb_to_binary(masks[choices], class_df, name=bin_class))
         pred_a = binary_to_bw(vec_to_oh(model_a.predict(sats[choices])))
         pred_b = binary_to_bw(vec_to_oh(model_b.predict(sats[choices])))
+
     else:
         m_choices = masks[choices]
         pred_a = oh_to_rgb(vec_to_oh(model_a.predict(sats[choices])), class_df)
@@ -720,6 +724,7 @@ def view_tiles(sats, masks, choices, model_a, a_name, model_b, b_name, class_df,
             axs[i, 2].set_title(str(a_name))
             axs[i, 3].imshow(pred_b[i])
             axs[i, 3].set_title(str(b_name))
+
         else:
             axs[i, 0].imshow(s_choices[i])
             axs[i, 1].imshow(m_choices[i])
