@@ -112,17 +112,26 @@ class SemSeg:
             masks = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
 
         if ttv_split:
-            train_choices = np.load(self.data_path + 'Trianing_Choices_' + str(self.dim) + '.npy')
+            train_choices = np.load(self.data_path + 'Training_Choices_' + str(self.dim) + '.npy')
             val_choices = np.load(self.data_path + 'Validation_Choices_' + str(self.dim) + '.npy')
 
             sats_train = sats[train_choices]
             holder = np.delete(sats, train_choices, axis=0)
             sats_val = holder[val_choices]
-            sats_test = np.delete(holder, val_choices)
+            sats_test = np.delete(holder, val_choices, axis=0)
+            del sats
 
             enc_train = enc[train_choices]
-            enc_val = np.delete(enc, train_choices)
-            return [sats_train, sats_val, sats_test, masks, enc_train, enc_val]
+            holder = np.delete(enc, train_choices, axis=0)
+            enc_val = holder[val_choices]
+            enc_test = np.delete(holder, val_choices, axis=0)
+            del enc
+            del holder
+
+            if masks:
+                return [sats_train, sats_val, sats_test, enc_train, enc_val]
+            else:
+                return [sats_train, sats_val, sats_test, masks, enc_train, enc_val]
         else:
             if masks:
                 return [sats, masks, enc]
