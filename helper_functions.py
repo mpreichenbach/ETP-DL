@@ -90,18 +90,18 @@ class SemSeg:
             self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' imagery'
 
         # the following method is filled from https://keras.io/api/applications/ and may be updated in the future
-        self.pretrained_models =['Xception', 'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2',
-                                 'ResNet101V2', 'ResNet152V2', 'InceptionV3', 'InceptionResNetV2', 'MobileNet',
-                                 'MobileNetV2', 'DenseNet121', 'DenseNet169', 'DenseNet201', 'NASNetMobile',
-                                 'NASNetLarge', 'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
-                                 'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
+        self.pretrained_models = ['Xception', 'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2',
+                                  'ResNet101V2', 'ResNet152V2', 'InceptionV3', 'InceptionResNetV2', 'MobileNet',
+                                  'MobileNetV2', 'DenseNet121', 'DenseNet169', 'DenseNet201', 'NASNetMobile',
+                                  'NASNetLarge', 'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
+                                  'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
 
     # if you want separate objects for the data, call this function
-    def load_data(self, masks=True, val_set=False):
+    def load_data(self, masks=True, ttv_split=True):
         if self.ir:
-            s = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
+            sats = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
         else:
-            s = np.load(self.data_path + 'RGB_tiles_' + str(self.dim) + '.npy')
+            sats = np.load(self.data_path + 'RGB_tiles_' + str(self.dim) + '.npy')
 
         if len(self.classes) == 1:
             enc = np.load(self.data_path + 'Binary Classification/' + str(self.classes[0]) + '_' + str(self.dim) + '.npy')
@@ -109,25 +109,26 @@ class SemSeg:
             enc = np.load(self.data_path + 'Encoded_tiles_' + str(self.dim) + '.npy')
 
         if masks:
-            m = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
+            masks = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
 
-        if val_set:
-            val_idx = np.load(self.data_path + 'Validation_Choices_' + str(self.dim) + '.npy')
-            s_train = np.delete(s, val_idx, axis=0)
-            enc_train = np.delete(enc, val_idx, axis=0)
-            s_val = s[val_idx]
-            enc_val = enc[val_idx]
-            if masks:
-                m_train = np.delete(m, val_idx, axis=0)
-                m_val = m[val_idx]
-                return [s_train, m_train, enc_train, s_val, m_val, enc_val]
-            else:
-                return [s_train, enc_train, s_val, enc_val]
+        if ttv_split:
+            train_choices = np.load(self.data_path + 'Trianing_Choices_' + str(self.dim) + '.npy')
+            val_choices = np.load(self.data_path + 'Validation_Choices_' + str(self.dim) + '.npy')
+
+            sats_train = sats[train_choices]
+            holder = np.delete(sats, train_choices, axis=0)
+            sats_val = holder[val_choices]
+            sats_test = np.delete(holder, val_choices)
+
+            enc_train = enc[train_choices]
+            enc_val = np.delete(enc, train_choices)
+            return [sats_train, sats_val, sats_test, masks, enc_train, enc_val]
         else:
             if masks:
-                return [s, m, enc]
+                return [sats, masks, enc]
             else:
-                return [s, enc]
+                return [sats, enc]
+
 
 #####
 # Helper functions
@@ -200,7 +201,7 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, do=0.2, opt='Ad
         return cnn_pt
 
     #####
-    # VGG16 & VGG18
+    # VGG16 & VGG19
     #####
     if backbone == 'VGG16':
         input_proc = vgg16.preprocess_input(input)
