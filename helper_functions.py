@@ -97,7 +97,7 @@ class SemSeg:
                                   'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
 
     # if you want separate objects for the data, call this function
-    def load_data(self, masks=True, ttv_split=True):
+    def load_data(self, load_masks=True, ttv_split=True):
         if self.ir:
             sats = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
         else:
@@ -108,7 +108,7 @@ class SemSeg:
         else:
             enc = np.load(self.data_path + 'Encoded_tiles_' + str(self.dim) + '.npy')
 
-        if masks:
+        if load_masks:
             masks = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
 
         if ttv_split:
@@ -128,12 +128,12 @@ class SemSeg:
             del enc
             del holder
 
-            if masks:
-                return [sats_train, sats_val, sats_test, enc_train, enc_val]
-            else:
+            if load_masks:
                 return [sats_train, sats_val, sats_test, masks, enc_train, enc_val]
+            else:
+                return [sats_train, sats_val, sats_test, enc_train, enc_val]
         else:
-            if masks:
+            if load_masks:
                 return [sats, masks, enc]
             else:
                 return [sats, enc]
