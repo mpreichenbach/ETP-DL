@@ -7,21 +7,20 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
 
-vgg16_callbacks = [
-    TerminateOnNaN(),
-    ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG16/', saved_best_only=True, save_weights_only=True),
-    EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
-    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
-    CSVLogger('Saved Models/2021-7-30/CSV logs/VGG16.csv', append=True)
-]
-vgg19_callbacks = [
-    TerminateOnNaN(),
-    ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG19/', saved_best_only=True, save_weights_only=True),
-    EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
-    ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
-    CSVLogger('Saved Models/2021-7-30/CSV logs/VGG19.csv', append=True)
-]
-
+# vgg16_callbacks = [
+#     TerminateOnNaN(),
+#     ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG16/', saved_best_only=True, save_weights_only=True),
+#     EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
+#     ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
+#     CSVLogger('Saved Models/2021-7-30/CSV logs/VGG16.csv', append=True)
+# ]
+# vgg19_callbacks = [
+#     TerminateOnNaN(),
+#     ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG19/', saved_best_only=True, save_weights_only=True),
+#     EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
+#     ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
+#     CSVLogger('Saved Models/2021-7-30/CSV logs/VGG19.csv', append=True)
+# ]
 
 class DigitalGlobeDataset:
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
@@ -100,17 +99,21 @@ class SemSeg:
             holder = np.delete(sats, train_choices, axis=0)
             sats_val = holder[val_choices]
             sats_test = np.delete(holder, val_choices, axis=0)
-            del sats
+
+            if load_masks:
+                masks_train = masks[train_choices]
+                holder = np.delete(masks, train_choices, axis=0)
+                masks_val = holder[val_choices]
+                masks_test = np.delete(holder, val_choices, axis=0)
 
             enc_train = enc[train_choices]
             holder = np.delete(enc, train_choices, axis=0)
             enc_val = holder[val_choices]
             enc_test = np.delete(holder, val_choices, axis=0)
-            del enc
-            del holder
 
             if load_masks:
-                return [sats_train, sats_val, sats_test, masks, enc_train, enc_val, enc_test]
+                return [sats_train, sats_val, sats_test, masks_train, masks_val, masks_test, enc_train, enc_val,
+                        enc_test]
             else:
                 return [sats_train, sats_val, sats_test, enc_train, enc_val]
         else:
