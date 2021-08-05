@@ -1,11 +1,11 @@
 import os
 import numpy as np
 import pandas as pd
+from helper_functions import pt_model, view_tiles
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TerminateOnNaN, CSVLogger
 from helper_functions import unet_main_block
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
-
 
 # vgg16_callbacks = [
 #     TerminateOnNaN(),
