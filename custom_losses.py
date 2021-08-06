@@ -1,15 +1,16 @@
 import tensorflow as tf
 
-def iou(y_true, y_pred):
-    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-score for each class,
+def iou_loss(y_true, y_pred):
+    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-loss for each class,
     # then averages over the classes to get an overall score.
+    # https://en.wikipedia.org/wiki/Jaccard_index
 
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
+    y_true = tf.cast(y_true, dtype=tf.float32)
+    y_pred = tf.cast(y_pred, dtype=tf.float32)
 
     intersection = tf.math.multiply(y_true, y_pred)
     i_totals = tf.reduce_sum(intersection, axis=(1, 2))
-    union = tf.math.add(y_true, y_pred)
+    union = tf.math.add(y_true, tf.math.add(y_pred, -intersection))
     u_totals = tf.reduce_sum(union, axis=(1, 2))
 
     # Note that some references insist on adding 1 to the numerator and denominator, or an epsilon to the denominator,
@@ -22,7 +23,20 @@ def iou(y_true, y_pred):
 
     return 1 - avg_iou
 
-def dice(y_true, y_pred):
-    a = 1 + 1
+def dice_loss(y_true, y_pred):
+    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the dice-loss for each class,
+    # then averages over the classes to get an overall score.
+    # https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
 
-    return a
+    y_true = tf.cast(y_true, dtype=tf.float32)
+    y_pred = tf.cast(y_pred, dtype=tf.float32)
+
+    numerator = 2 * tf.reduce_sum(tf.math.multiply(y_true, y_pred), axis=(1, 2))
+    denominator = tf.reduce_sum(y_true, axis=(1, 2)) + tf.reduce_sum(y_pred, axis=(1, 2))
+
+    # As in iou() above, we don't need to enforce nonzero denominators
+    cat_dice = numerator / denominator
+    avg_dice = tf.reduce_mean(cat_dice)
+
+    return 1 - avg_dice
+
