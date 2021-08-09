@@ -1,6 +1,8 @@
 import os
+import time
 import numpy as np
 import pandas as pd
+from metrics import iou_loss, dice_loss, total_acc
 from helper_functions import pt_model, view_tiles
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TerminateOnNaN, CSVLogger
 from helper_functions import unet_main_block
@@ -48,7 +50,7 @@ class DigitalGlobeDataset:
 class SemSeg:
     """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
 
-    # initialization properties
+    # attributes
     def __init__(self, dim, ir=False, binary_class=None):
         self.dim = dim
         self.ir = ir
@@ -77,7 +79,7 @@ class SemSeg:
                                   'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
 
     # if you want separate objects for the data, call this function
-    def load_data(self, load_masks=True, ttv_split=True):
+    def load_data(self, load_masks=True, ttv_split=True, test_only=False):
         if self.ir:
             sats = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
         else:
@@ -110,6 +112,9 @@ class SemSeg:
             holder = np.delete(enc, train_choices, axis=0)
             enc_val = holder[val_choices]
             enc_test = np.delete(holder, val_choices, axis=0)
+
+            if test_only:
+                return [sats_test, masks_test, enc_test]
 
             if load_masks:
                 return [sats_train, sats_val, sats_test, masks_train, masks_val, masks_test, enc_train, enc_val,
@@ -184,3 +189,48 @@ class Unet:
         cnn.compile(optimizer=opt, loss=loss)
 
         return cnn
+
+# metrics = pd.DataFrame(0, index=['VGG16 CC', 'VGG16 IoU', 'VGG16 Dice', 'VGG19 CC', 'VGG19 IoU', 'VGG19 Dice'],
+#                        columns=['Name', 'Total Acc', 'IoU', 'Dice', 'Inf Time'])
+#
+# for name in metrics.index:
+#     if name == 'VGG16 CC':
+#         path = 'Saved Models/2021-7-30/VGG16/'
+#     elif name == 'VGG19 CC':
+#         path = 'Saved Models/2021-7-30/VGG19/'
+#     elif name == 'VGG16 IoU':
+#         path = 'Saved Models/2021-08-06/VGG16_iou/'
+#     elif name == 'VGG19 IoU':
+#         path = 'Saved Models/2021-08-06/VGG19_iou/'
+#     elif name == 'VGG16 Dice':
+#         path = 'Saved Models/2021-08-06/VGG16_dice/'
+#     elif name == 'VGG19 Dice':
+#         path = 'Saved Models/2021-08-06/VGG19_dice/'
+#     else:
+#         path = 'You\'re an idiot.'
+#
+#     short_str = name[0:5]
+#     model = pt_model(short_str, (256, 256, 3), 6)
+#     model.load_weights(path)
+#
+#     y_true = e_test[0:300]
+#
+#     tic = time.perf_counter()
+#     y_pred = model.predict(s_test[0:300])
+#     toc = time.perf_counter()
+#     inf_time = toc - tic
+#
+#     acc = np.mean([total_acc(y_true[0:100], y_pred[0:100]), total_acc(y_true[100:200], y_pred[100:200]),
+#                   total_acc(y_true[200:300], y_pred[200:300])])
+#     iou = 1 - np.mean([iou_loss(y_true[0:100], y_pred[0:100]), iou_loss(y_true[100:200], y_pred[100:200]),
+#                       iou_loss(y_true[200:300], y_pred[200:300])])
+#     dice = 1 - np.mean([dice_loss(y_true[0:100], y_pred[0:100]), dice_loss(y_true[100:200], y_pred[100:200]),
+#                       dice_loss(y_true[200:300], y_pred[200:300])])
+#
+#
+#     metrics.loc[name, 'Total Acc'] = round(acc, 2)
+#     metrics.loc[name, 'IoU'] = round(1 - iou, 2)
+#     metrics.loc[name, 'Dice'] = round(1 - dice, 2)
+#     metrics.loc[name, 'Inf Time'] = round(inf_time, 2)
+#
+#     del model

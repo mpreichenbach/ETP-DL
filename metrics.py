@@ -58,4 +58,3 @@ def total_acc(y_true, y_pred):
     proportion = (numerator / denominator)
 
     return proportion
-
