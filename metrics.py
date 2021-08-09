@@ -44,18 +44,18 @@ def total_acc(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the total accuracy of the
     # model's prediction.
 
-    y_true = tf.cast(y_true, dtype=tf.float32)
-    y_pred = tf.cast(tf.argmax(y_pred, axis=-1), dtype=tf.float32)
-
     y_pred = tf.where(
         tf.equal(tf.reduce_max(y_pred, axis=-1, keepdims=True), y_pred),
         tf.constant(1, shape=y_pred.shape), tf.constant(0, shape=y_pred.shape))
 
-    intersection = tf.math.multiply(y_true, y_pred)
-    numerator = tf.math.cumsum(intersection)
-    denominator = tf.math.cumprod(y_pred.shape).numpy()[-1]
+    y_true = tf.cast(y_true, dtype=tf.float32)
+    y_pred = tf.cast(y_pred, dtype=tf.float32)
 
-    proportion = numerator / denominator
+    intersection = tf.math.multiply(y_true, y_pred)
+    numerator = tf.math.reduce_sum(intersection).numpy()
+    denominator = tf.math.cumprod(y_true.shape).numpy()[-2]
+
+    proportion = (numerator / denominator)
 
     return proportion
 
