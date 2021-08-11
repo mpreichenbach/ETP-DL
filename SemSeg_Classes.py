@@ -190,8 +190,11 @@ class Unet:
 
         return cnn
 
+# potsdam = SemSeg(256)
+# s_test, m_test, e_test = potsdam.load_data(test_only=True)
+#
 # metrics = pd.DataFrame(0, index=['VGG16 CC', 'VGG16 IoU', 'VGG16 Dice', 'VGG19 CC', 'VGG19 IoU', 'VGG19 Dice'],
-#                        columns=['Name', 'Total Acc', 'IoU', 'Dice', 'Inf Time'])
+#                        columns=['Total Acc', 'IoU', 'Dice', 'Inf Time'])
 #
 # for name in metrics.index:
 #     if name == 'VGG16 CC':
@@ -231,6 +234,9 @@ class Unet:
 #     metrics.loc[name, 'Total Acc'] = round(acc, 2)
 #     metrics.loc[name, 'IoU'] = round(1 - iou, 2)
 #     metrics.loc[name, 'Dice'] = round(1 - dice, 2)
-#     metrics.loc[name, 'Inf Time'] = round(inf_time, 2)
+#     metrics.loc[name, 'Inf Time'] = round(inf_time, 2
+#
+#     # for cpu inference times, incorporate this code right after importing tensorflow:
+#     #tf.debugging.set_log_device_placement(True)
 #
 #     del model
