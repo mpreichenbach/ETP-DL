@@ -610,6 +610,7 @@ def view_tiles(sats, masks, choices, model_a, a_name, model_b, b_name, class_df,
     plt.tight_layout()
     plt.show()
 
+
 def unet_main_block(m, n_filters, dim, bn, do_rate):
     """The primary convolutional block in the UNet network.
 
@@ -627,4 +628,3 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     return n
-

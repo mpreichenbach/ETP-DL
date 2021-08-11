@@ -3,11 +3,12 @@ import time
 import numpy as np
 import pandas as pd
 from metrics import iou_loss, dice_loss, total_acc
-from helper_functions import pt_model, view_tiles
+from helper_functions import pt_model, view_tiles, oh_to_rgb, vec_to_oh
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TerminateOnNaN, CSVLogger
 from helper_functions import unet_main_block
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
+from matplotlib import pyplot as plt
 
 # vgg16_callbacks = [
 #     TerminateOnNaN(),
@@ -190,27 +191,19 @@ class Unet:
 
         return cnn
 
+
 # potsdam = SemSeg(256)
 # s_test, m_test, e_test = potsdam.load_data(test_only=True)
 #
-# metrics = pd.DataFrame(0, index=['VGG16 CC', 'VGG16 IoU', 'VGG16 Dice', 'VGG19 CC', 'VGG19 IoU', 'VGG19 Dice'],
-#                        columns=['Total Acc', 'IoU', 'Dice', 'Inf Time'])
+# metrics = pd.DataFrame(0, index=['VGG16_cc', 'VGG16_iou', 'VGG16_dice', 'VGG16_cc_iou', 'VGG19_cc', 'VGG19_iou',
+#                                  'VGG19_dice', 'VGG19_cc_iou'],
+#                        columns=['Total Acc', 'IoU', 'Dice', 'GPU Inf Time', 'CPU Inf Time'])
+# date = '2021-08-11'
+# holder = np.zeros([8, 5, 256, 256, 3]).astype(np.uint8)
 #
-# for name in metrics.index:
-#     if name == 'VGG16 CC':
-#         path = 'Saved Models/2021-7-30/VGG16/'
-#     elif name == 'VGG19 CC':
-#         path = 'Saved Models/2021-7-30/VGG19/'
-#     elif name == 'VGG16 IoU':
-#         path = 'Saved Models/2021-08-06/VGG16_iou/'
-#     elif name == 'VGG19 IoU':
-#         path = 'Saved Models/2021-08-06/VGG19_iou/'
-#     elif name == 'VGG16 Dice':
-#         path = 'Saved Models/2021-08-06/VGG16_dice/'
-#     elif name == 'VGG19 Dice':
-#         path = 'Saved Models/2021-08-06/VGG19_dice/'
-#     else:
-#         path = 'You\'re an idiot.'
+# for i in range(len(metrics.index)):
+#     name = metrics.index[i]
+#     path = os.path.join('Saved Models', date, name)
 #
 #     short_str = name[0:5]
 #     model = pt_model(short_str, (256, 256, 3), 6)
@@ -234,9 +227,56 @@ class Unet:
 #     metrics.loc[name, 'Total Acc'] = round(acc, 2)
 #     metrics.loc[name, 'IoU'] = round(1 - iou, 2)
 #     metrics.loc[name, 'Dice'] = round(1 - dice, 2)
-#     metrics.loc[name, 'Inf Time'] = round(inf_time, 2
+#     metrics.loc[name, 'GPU Inf Time'] = round(inf_time, 2)
 #
 #     # for cpu inference times, incorporate this code right after importing tensorflow:
 #     #tf.debugging.set_log_device_placement(True)
 #
+#     for j in range(5):
+#         holder[i, j] = oh_to_rgb(vec_to_oh(model.predict(s_test[j].reshape((1, 256, 256, 3)))),
+#                                  potsdam.class_df).reshape((256, 256, 3))
+#
 #     del model
+#
+# fig, axs = plt.subplots(5, 10)
+# plt.rcParams.update({'font.size': 12})
+#
+# for i in range(5):
+#     if i == 0:
+#         axs[i, 0].imshow(s_test[i])
+#         axs[i, 0].set_title("RGB")
+#         axs[i, 1].imshow(m_test[i])
+#         axs[i, 1].set_title("Ground Truth")
+#         axs[i, 2].imshow(holder[0, i])
+#         axs[i, 2].set_title('VGG16 CC')
+#         axs[i, 3].imshow(holder[1, i])
+#         axs[i, 3].set_title('VGG16 IoU')
+#         axs[i, 4].imshow(holder[2, i])
+#         axs[i, 4].set_title('VGG16 Dice')
+#         axs[i, 5].imshow(holder[3, i])
+#         axs[i, 5].set_title('VGG16 CC+IoU')
+#         axs[i, 6].imshow(holder[4, i])
+#         axs[i, 6].set_title('VGG19')
+#         axs[i, 7].imshow(holder[5, i])
+#         axs[i, 7].set_title('VGG19 IoU')
+#         axs[i, 8].imshow(holder[6, i])
+#         axs[i, 8].set_title('VGG19 Dice')
+#         axs[i, 9].imshow(holder[7, i])
+#         axs[i, 9].set_title('VGG19 CC+IoU')
+#
+#
+#     else:
+#         axs[i, 0].imshow(s_test[i])
+#         axs[i, 1].imshow(m_test[i])
+#         axs[i, 2].imshow(holder[0, i])
+#         axs[i, 3].imshow(holder[1, i])
+#         axs[i, 4].imshow(holder[2, i])
+#         axs[i, 5].imshow(holder[3, i])
+#         axs[i, 6].imshow(holder[4, i])
+#         axs[i, 7].imshow(holder[5, i])
+#         axs[i, 8].imshow(holder[6, i])
+#         axs[i, 9].imsohw(holder[7, i])
+#
+# plt.setp(axs, xticks=[], yticks=[])
+# plt.tight_layout()
+# plt.show()
