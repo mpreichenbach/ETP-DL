@@ -40,3 +40,14 @@ def dice_loss(y_true, y_pred):
 
     return 1 - avg_dice
 
+def cc_iou_loss(y_true, y_pred):
+    # combines categorical crossentropy and iou losses
+
+    y_true = tf.cast(y_true, dtype=tf.float32)
+    y_pred = tf.cast(y_pred, dtype=tf.float32)
+
+    cc = tf.keras.losses.CategoricalCrossentropy()
+
+    loss = cc(y_true, y_pred) + iou_loss(y_true, y_pred)
+
+    return loss
