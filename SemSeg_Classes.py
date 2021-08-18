@@ -1,14 +1,9 @@
 import os
-import time
 import numpy as np
 import pandas as pd
-from metrics import iou_loss, dice_loss, total_acc
-from helper_functions import pt_model, view_tiles, oh_to_rgb, vec_to_oh
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, TerminateOnNaN, CSVLogger
 from helper_functions import unet_main_block
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
-from matplotlib import pyplot as plt
 
 # vgg16_callbacks = [
 #     TerminateOnNaN(),

@@ -1,5 +1,12 @@
+import os
+import time
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 from SemSeg_Classes import SemSeg
+from matplotlib import pyplot as plt
+from helper_functions import pt_model, oh_to_rgb, vec_to_oh
+
 
 def iou_loss(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-loss for each class,
@@ -70,56 +77,67 @@ metrics = pd.DataFrame(0, index=['VGG16_cc', 'VGG16_iou', 'VGG16_dice', 'VGG16_c
                                  'VGG19_dice', 'VGG19_cc_iou'],
                        columns=['Total Acc', 'IoU', 'Dice', 'GPU Inf Time', 'CPU Inf Time'])
 
-date = '2021-08-11'
-holder = np.zeros([8, 5, 256, 256, 3]).astype(np.uint8)
 
-for i in range(len(metrics.index)):
-    name = metrics.index[i]
-    path = os.path.join('Saved Models', date, name, '/')
-
-    short_str = name[0:5]
-    model = pt_model(short_str, (256, 256, 3), 6)
-    model.load_weights(path)
-
-    y_true = e_test[0:300]
-
-    tic = time.perf_counter()
-    y_pred = model.predict(s_test[0:300])
-    toc = time.perf_counter()
-    inf_time = toc - tic
-
-    acc = np.mean([total_acc(y_true[0:100], y_pred[0:100]), total_acc(y_true[100:200], y_pred[100:200]),
-                  total_acc(y_true[200:300], y_pred[200:300])])
-    iou = 1 - np.mean([iou_loss(y_true[0:100], y_pred[0:100]), iou_loss(y_true[100:200], y_pred[100:200]),
-                      iou_loss(y_true[200:300], y_pred[200:300])])
-    dice = 1 - np.mean([dice_loss(y_true[0:100], y_pred[0:100]), dice_loss(y_true[100:200], y_pred[100:200]),
-                       dice_loss(y_true[200:300], y_pred[200:300])])
-
-
-    metrics.loc[name, 'Total Acc'] = round(acc, 2)
-    metrics.loc[name, 'IoU'] = round(1 - iou, 2)
-    metrics.loc[name, 'Dice'] = round(1 - dice, 2)
-    metrics.loc[name, 'GPU Inf Time'] = round(inf_time, 2)
-
-    for j in range(5):
-        holder[i, j] = oh_to_rgb(vec_to_oh(model.predict(s_test[j].reshape((1, 256, 256, 3)))),
-                                 potsdam.class_df).reshape((256, 256, 3))
-
-    del model
-
+# for cpu inference times, incorporate this code after importing tensorflow:
+# tf.config.set_visible_devices([], 'GPU')
+# tf.debugging.set_log_device_placement(True)
 #
-#     # for cpu inference times, incorporate this code right after importing tensorflow:
-#     #tf.debugging.set_log_device_placement(True)
+# a = tf.constant([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+# b = tf.constant([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+# c = tf.matmul(a, b)
 #
+# print(c)
+#
+# date = '2021-08-11'
+# holder = np.zeros([8, 5, 256, 256, 3]).astype(np.uint8)
+# # choices = np.arange(0, 5)
+# choices = np.random.choice(len(s_test), size=5, replace=False)
+#
+# for i in range(len(metrics.index)):
+#     name = metrics.index[i]
+#     p_name = name + '/'
+#     path = os.path.join('Saved Models', date, p_name)
+#
+#     short_str = name[0:5]
+#     model = pt_model(short_str, (256, 256, 3), 6)
+#     model.load_weights(path)
+#
+#     y_true = e_test[0:300]
+#
+#     tic = time.perf_counter()
+#     y_pred = model.predict(s_test[0:300])
+#     toc = time.perf_counter()
+#     inf_time = (toc - tic) / 3
 
+    # acc = np.mean([total_acc(y_true[0:100], y_pred[0:100]), total_acc(y_true[100:200], y_pred[100:200]),
+    #               total_acc(y_true[200:300], y_pred[200:300])])
+    # iou = 1 - np.mean([iou_loss(y_true[0:100], y_pred[0:100]), iou_loss(y_true[100:200], y_pred[100:200]),
+    #                   iou_loss(y_true[200:300], y_pred[200:300])])
+    # dice = 1 - np.mean([dice_loss(y_true[0:100], y_pred[0:100]), dice_loss(y_true[100:200], y_pred[100:200]),
+    #                    dice_loss(y_true[200:300], y_pred[200:300])])
+    #
+    # metrics.loc[name, 'Total Acc'] = round(float(acc), 2)
+    # metrics.loc[name, 'IoU'] = round(1 - iou, 2)
+    # metrics.loc[name, 'Dice'] = round(1 - dice, 2)
+    # metrics.loc[name, 'GPU Inf Time'] = round(inf_time, 2)
+
+    # uncomment the following to get CPU speeds
+    # metrics.loc[name, 'CPU Inf Time'] = round(inf_time, 2)
+
+    # for j in range(5):
+    #     holder[i, j] = oh_to_rgb(vec_to_oh(model.predict(s_test[choices[j]].reshape((1, 256, 256, 3)))),
+    #                              potsdam.class_df).reshape((256, 256, 3))
+#
+#     del model
+#
 # fig, axs = plt.subplots(5, 10)
-# plt.rcParams.update({'font.size': 12})
+# plt.rcParams.update({'font.size': 10})
 #
 # for i in range(5):
 #     if i == 0:
-#         axs[i, 0].imshow(s_test[i])
+#         axs[i, 0].imshow(s_test[choices[i]])
 #         axs[i, 0].set_title("RGB")
-#         axs[i, 1].imshow(m_test[i])
+#         axs[i, 1].imshow(m_test[choices[i]])
 #         axs[i, 1].set_title("Ground Truth")
 #         axs[i, 2].imshow(holder[0, i])
 #         axs[i, 2].set_title('VGG16 CC')
@@ -130,7 +148,7 @@ for i in range(len(metrics.index)):
 #         axs[i, 5].imshow(holder[3, i])
 #         axs[i, 5].set_title('VGG16 CC+IoU')
 #         axs[i, 6].imshow(holder[4, i])
-#         axs[i, 6].set_title('VGG19')
+#         axs[i, 6].set_title('VGG19 CC')
 #         axs[i, 7].imshow(holder[5, i])
 #         axs[i, 7].set_title('VGG19 IoU')
 #         axs[i, 8].imshow(holder[6, i])
@@ -140,8 +158,8 @@ for i in range(len(metrics.index)):
 #
 #
 #     else:
-#         axs[i, 0].imshow(s_test[i])
-#         axs[i, 1].imshow(m_test[i])
+#         axs[i, 0].imshow(s_test[choices[i]])
+#         axs[i, 1].imshow(m_test[choices[i]])
 #         axs[i, 2].imshow(holder[0, i])
 #         axs[i, 3].imshow(holder[1, i])
 #         axs[i, 4].imshow(holder[2, i])
@@ -149,7 +167,7 @@ for i in range(len(metrics.index)):
 #         axs[i, 6].imshow(holder[4, i])
 #         axs[i, 7].imshow(holder[5, i])
 #         axs[i, 8].imshow(holder[6, i])
-#         axs[i, 9].imsohw(holder[7, i])
+#         axs[i, 9].imshow(holder[7, i])
 #
 # plt.setp(axs, xticks=[], yticks=[])
 # plt.tight_layout()
