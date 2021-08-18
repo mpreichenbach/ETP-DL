@@ -5,20 +5,6 @@ from helper_functions import unet_main_block
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
-# vgg16_callbacks = [
-#     TerminateOnNaN(),
-#     ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG16/', saved_best_only=True, save_weights_only=True),
-#     EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
-#     ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
-#     CSVLogger('Saved Models/2021-7-30/CSV logs/VGG16.csv', append=True)
-# ]
-# vgg19_callbacks = [
-#     TerminateOnNaN(),
-#     ModelCheckpoint(filepath='Saved Models/2021-7-30/VGG19/', saved_best_only=True, save_weights_only=True),
-#     EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=3, restore_best_weights=True),
-#     ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_delta=0.0001),
-#     CSVLogger('Saved Models/2021-7-30/CSV logs/VGG19.csv', append=True)
-# ]
 
 class DigitalGlobeDataset:
     """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values

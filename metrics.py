@@ -6,6 +6,7 @@ import tensorflow as tf
 from SemSeg_Classes import SemSeg
 from matplotlib import pyplot as plt
 from helper_functions import pt_model, oh_to_rgb, vec_to_oh
+from tensorflow.keras.callbacks import TerminateOnNaN, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 
 
 def iou_loss(y_true, y_pred):
@@ -70,12 +71,25 @@ def total_acc(y_true, y_pred):
 #####
 # The following code creates a dataframe with various metrics for all saved models in a folder
 
-potsdam = SemSeg(256)
-s_test, m_test, e_test = potsdam.load_data(test_only=True)
-
-metrics = pd.DataFrame(0, index=['VGG16_cc', 'VGG16_iou', 'VGG16_dice', 'VGG16_cc_iou', 'VGG19_cc', 'VGG19_iou',
-                                 'VGG19_dice', 'VGG19_cc_iou'],
-                       columns=['Total Acc', 'IoU', 'Dice', 'GPU Inf Time', 'CPU Inf Time'])
+# vgg16_callbacks = [
+#     TerminateOnNaN(),
+#     ModelCheckpoint(filepath='Saved Models/2021-08-18/VGG16_fine_tuned/', saved_best_only=True, save_weights_only=True),
+#     ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=40, min_delta=0.0001),
+#     CSVLogger('Saved Models/2021-08-18/CSV logs/VGG16_fine_tuned.csv', append=True)
+# ]
+# vgg19_callbacks = [
+#     TerminateOnNaN(),
+#     ModelCheckpoint(filepath='Saved Models/2021-08-18/VGG19_fine_tuned/', saved_best_only=True, save_weights_only=True),
+#     ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=40, min_delta=0.0001),
+#     CSVLogger('Saved Models/2021-08-18/CSV logs/VGG19_fine_tuned.csv', append=True)
+# ]
+#
+# potsdam = SemSeg(256)
+# s_test, m_test, e_test = potsdam.load_data(test_only=True)
+#
+# metrics = pd.DataFrame(0, index=['VGG16_cc', 'VGG16_iou', 'VGG16_dice', 'VGG16_cc_iou', 'VGG19_cc', 'VGG19_iou',
+#                                  'VGG19_dice', 'VGG19_cc_iou'],
+#                        columns=['Total Acc', 'IoU', 'Dice', 'GPU Inf Time', 'CPU Inf Time'])
 
 
 # for cpu inference times, incorporate this code after importing tensorflow:
