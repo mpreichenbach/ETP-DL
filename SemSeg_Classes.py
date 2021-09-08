@@ -115,18 +115,22 @@ class Metrics:
 
         self.data = [rgb, labels, enc]
 
-    def make_scores(self):
-        """Sets self.score_table as a dataframe with predicted metrics for each model in self.models."""
+    def make_scores(self, sample_size=500):
+        """Sets self.score_table as a dataframe with predicted metrics for each model in self.models.
+
+        Args:
+            sample_size (int): the number of randomly chosen tiles from which to generate the metrics."""
 
         names = [x.name for x in self.models]
-        y_true = self.data[2]
+        choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
+        y_true = self.data[2][choices]
         table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
 
         for i in range(len(self.models)):
             model = self.models[i]
 
             tic = time.perf_counter()
-            y_pred = model.predict(self.data[0])
+            y_pred = model.predict(self.data[0][choices])
             toc = time.perf_counter()
             print('Finished predictions for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
