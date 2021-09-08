@@ -49,6 +49,10 @@ class Metrics:
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
 
+
+
+        class_names =
+
     # methods
     def load_models(self, names, dimensions, losses='cc'):
         """Loads trained models with a given input dimensions.
@@ -112,17 +116,20 @@ class Metrics:
 
         self.data = [rgb, labels, enc]
 
-    def generate_scores(self):
-        """Returns a list of dataframes with predicted metrics for each model in self.models."""
+    def make_scores(self):
+        """Sets self.score_table as a dataframe with predicted metrics for each model in self.models."""
 
         names = [x.name for x in self.models]
         y_true = self.data[2]
         table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
 
-        for model in self.models:
+        for i in range(len(self.models)):
+            model = self.models[i]
+
             tic = time.perf_counter()
-            y_pred = model.predict(y_true)
+            y_pred = model.predict(self.data[0])
             toc = time.perf_counter()
+            print('Finished predictions for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
@@ -132,6 +139,22 @@ class Metrics:
             table.loc[model.name, 'GPU Inference Time'] = batch_time
 
         self.score_table = table
+
+    def make_confusion(self):
+        """Sets self.confusion_tables as a list of confusion tables for each entry of self.models. Note that this
+        process may take a long time if you have large datasets or many models to compare."""
+
+        tables = []
+        y_true = self.data[1]
+        label_dict = {[]}
+
+        for model in self.models:
+            y_true = self.data[1]
+            y_pred =
+
+
+
+
 
 
 

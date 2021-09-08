@@ -533,6 +533,35 @@ def oh_to_rgb(oh_array, class_df):
     rgb_array = rgb_array.astype(np.uint8)
     return rgb_array
 
+def oh_to_label(oh_array, dim):
+    arr_list = np.identity(dim, dtype=np.uint8)
+    tuples = [tuple(x) for x in arr_list]
+    labels = np.arange(dim, dtype=np.uint8).tolist()
+    label_dict = dict(zip(tuples, labels))
+    holder = np.zeros(oh_array.shape[0:3])
+
+    for n in range(oh_array.shape[0]):
+        for i in range(oh_array.shape[1]):
+            for j in range(oh_array.shape[2]):
+                holder[n, i, j] = np.asarray(label_dict[tuple(oh_array[n, i, j])])
+
+    return holder
+
+def label_to_oh(label_array, dim):
+    arr_list = np.identity(dim, dtype=np.uint8)
+    tuples = [tuple(x) for x in arr_list]
+    labels = np.arange(dim, dtype=np.uint8).tolist()
+    label_dict = dict(zip(labels, tuples))
+    holder = np.zeros(label_array.shape + tuple(dim))
+
+    for n in range(label_array.shape[0]):
+        for i in range(label_array.shape[1]):
+            for j in range(label_array.shape[2]):
+                holder[n, i, j] = np.asarray(label_dict[tuple(label_array[n, i, j])])
+
+    return holder
+
+
 def vec_to_oh(array, progress=False, cycle=100):
     """This function takes "array" and converts its depth vectors to one-hot encodings.
 
