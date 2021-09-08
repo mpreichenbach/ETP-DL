@@ -146,10 +146,8 @@ class Metrics:
         Args:
             sample_size (int): the number of randomly chosen tiles from which to generate the confusion tables."""
 
-        tables = []
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[1][choices]
-        label_dict = {[]}
 
         for i in range(len(self.models)):
             model = self.models[i]
