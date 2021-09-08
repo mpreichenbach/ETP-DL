@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
+import time
+from losses import iou_loss, dice_loss, total_acc
 from helper_functions import unet_main_block, pt_model
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
@@ -40,25 +42,14 @@ class Metrics:
             project (str): one of 'Potsdam', 'Treadstone',
             dimensions (int): one of 256 or 512. """
 
+        self.data = []
         self.dimensions = dimensions
         self.models = []
         self.n_classes = 6
+        self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
 
-        if source == 'Potsdam':
-            folder = 'Data/Potsdam/Numpy Arrays/Test/'
-            rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
-            labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
-            enc = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
-        elif source == 'Treadstone':
-            folder = 'Data/Treadstone/'
-            rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
-            labels = np.load(folder + 'Labels_' + str(self.dimensions) + '.npy')
-            enc = np.load(folder + 'Encoded_' + str(self.dimensions) + '.npy')
-
-        self.data = [rgb, labels, enc]
-
-
+    # methods
     def load_models(self, names, dimensions, losses='cc'):
         """Loads trained models with a given input dimensions.
 
@@ -102,17 +93,50 @@ class Metrics:
             model = pt_model(model_list[i], dim_tuple, self.n_classes)
 
             model.load_weights(path + folder)
+            model.name = folder
             self.models.append(model)
 
     def load_data(self, data):
         """Loads a test dataset on which to compute metrics. Note that one can also just set the test_data attribute
         directly."""
-        self.test_data = data
+        if self.source == 'Potsdam':
+            folder = 'Data/Potsdam/Numpy Arrays/Test/'
+            rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
+            labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+        elif self.source == 'Treadstone':
+            folder = 'Data/Treadstone/'
+            rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
+            labels = np.load(folder + 'Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Encoded_' + str(self.dimensions) + '.npy')
+
+        self.data = [rgb, labels, enc]
+
+    def generate_scores(self):
+        """Returns a list of dataframes with predicted metrics for each model in self.models."""
+
+        names = [x.name for x in self.models]
+        y_true = self.data[2]
+        table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
+
+        for model in self.models:
+            tic = time.perf_counter()
+            y_pred = model.predict(y_true)
+            toc = time.perf_counter()
+            elapsed = toc - tic
+            batch_time = round(100 * elapsed / len(y_pred), 2)
+
+            table.loc[model.name, 'Accuracy'] = total_acc(y_true, y_pred)
+            table.loc[model.name, 'IoU'] = - iou_loss(y_true, y_pred) + 1
+            table.loc[model.name, 'Dice'] = - dice_loss(y_true, y_pred) + 1
+            table.loc[model.name, 'GPU Inference Time'] = batch_time
+
+        self.score_table = table
 
 
 
-    # methods
-    def metrics_table(self):
+
+
 
 
 
