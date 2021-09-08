@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-from helper_functions import unet_main_block
+from helper_functions import unet_main_block, pt_model
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
@@ -30,7 +30,7 @@ class DigitalGlobeDataset:
         return sats, masks, oh_encoded
 
 
-class Metrics:
+class Metrics(n_classes):
     """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats. Test
     data can be either one-hot encoded, or have integer labels."""
 
@@ -40,8 +40,9 @@ class Metrics:
         self.test_data = []
         self.data_source = ''
         self.label_dict = {}
+        self.n_classes = n_classes
 
-    def load_models(self, names, dimensions, losses='categorical_crossentropy'):
+    def load_models(self, names, dimensions, losses='cc'):
         """Loads trained models with a given input dimensions.
 
         Args:
@@ -49,11 +50,50 @@ class Metrics:
                             pretrained_weights attribute of SemSeg),
             dimensions (list): list of integers giving the dimensions of the input image of the corresponding model in
                             the names list,
-            losses (list): list of strings giving the loss names of the corresponding models in the names list."""
+            losses (list): list of strings giving the loss names of the corresponding models in the names list (can be
+                            cc for categorical crossentropy, iou for Intersection-over-Union, or dice."""
 
         if type(names) == 'str':
             model_list = [names]
-        elif type(names) != 'list':
+        elif type(names) == 'list':
+            model_list = names
+        else:
+            print('Please pass model name(s) as string (or list of strings).')
+
+        if type(dimensions) == 'int':
+            dim_list = [dimensions]
+        elif type(dimensions) == 'list':
+            dim_list = dimensions
+        else:
+            print('Please pass dimension(s) as integer (or list of integers).')
+
+        if type(losses) == 'str':
+            loss_list = []
+            for name in model_list:
+                loss_list.append(losses)
+        elif type(losses) == 'list':
+            loss_list = losses
+        else:
+            print('Please pass dimension(S) as string (or list of strings).')
+
+        path = 'Saved Models/Fully Trained Models/'
+        n = len(model_list)
+
+        for i in range(n):
+            folder = model_list[i] + '_' + dim_list[i] + '_' + loss_list[i]
+            dim_tuple = (dim_list[i], dim_list[i], 3)
+            model = pt_model(model_list[i], dim_tuple, self.n_classes)
+
+            model.load_weights(folder)
+            self.models.append(model)
+
+    def load_data(self, name, resolution='full'):
+        """Loads a test dataset on which to compute metrics.
+
+        Args:
+            name (str): one of 'Potsdam', 'Treadstone',
+            resolution (str): one of 'full', '10cm', '50cm', '100cm', '200cm'."""
+
 
 
     # methods
