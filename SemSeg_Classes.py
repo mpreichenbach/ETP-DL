@@ -2,8 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 import time
-from losses import iou_loss, dice_loss, total_acc
-from helper_functions import unet_main_block, pt_model
+from sklearn.metrics import confusion_matrix
+from metrics import iou_loss, dice_loss, total_acc
+from helper_functions import unet_main_block, pt_model, vec_to_oh, oh_to_label
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
@@ -42,16 +43,14 @@ class Metrics:
             project (str): one of 'Potsdam', 'Treadstone',
             dimensions (int): one of 256 or 512. """
 
+        self.confusion_matrices = []
         self.data = []
         self.dimensions = dimensions
         self.models = []
         self.n_classes = 6
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
-
-
-
-        class_names =
+        self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
 
     # methods
     def load_models(self, names, dimensions, losses='cc'):
@@ -140,17 +139,26 @@ class Metrics:
 
         self.score_table = table
 
-    def make_confusion(self):
+    def make_confusion(self, sample_size=500):
         """Sets self.confusion_tables as a list of confusion tables for each entry of self.models. Note that this
-        process may take a long time if you have large datasets or many models to compare."""
+        process may take a long time if you have large datasets or many models to compare.
+
+        Args:
+            sample_size (int): the number of randomly chosen tiles from which to generate the confusion tables."""
 
         tables = []
-        y_true = self.data[1]
+        choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
+        y_true = self.data[1][choices]
         label_dict = {[]}
 
-        for model in self.models:
-            y_true = self.data[1]
-            y_pred =
+        for i in range(len(self.models)):
+            model = self.models[i]
+            y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])), dim=self.n_classes)
+            table = confusion_matrix(y_true, y_pred, labels=self.lc_classes, normalize='true')
+            print('Finished confusion matrix for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
+
+            self.confusion_matrices.append(table)
+
 
 
 
