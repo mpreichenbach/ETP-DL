@@ -30,17 +30,34 @@ class DigitalGlobeDataset:
         return sats, masks, oh_encoded
 
 
-class Metrics(n_classes):
+class Metrics:
     """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats. Test
     data can be either one-hot encoded, or have integer labels."""
 
     # attributes
-    def __init__(self):
+    def __init__(self, source, dimensions):
+        """Args:
+            project (str): one of 'Potsdam', 'Treadstone',
+            dimensions (int): one of 256 or 512. """
+
+        self.dimensions = dimensions
         self.models = []
-        self.test_data = []
-        self.data_source = ''
-        self.label_dict = {}
-        self.n_classes = n_classes
+        self.n_classes = 6
+        self.source = source
+
+        if source == 'Potsdam':
+            folder = 'Data/Potsdam/Numpy Arrays/Test/'
+            rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
+            labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+        elif source == 'Treadstone':
+            folder = 'Data/Treadstone/'
+            rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
+            labels = np.load(folder + 'Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Encoded_' + str(self.dimensions) + '.npy')
+
+        self.data = [rgb, labels, enc]
+
 
     def load_models(self, names, dimensions, losses='cc'):
         """Loads trained models with a given input dimensions.
@@ -84,15 +101,13 @@ class Metrics(n_classes):
             dim_tuple = (dim_list[i], dim_list[i], 3)
             model = pt_model(model_list[i], dim_tuple, self.n_classes)
 
-            model.load_weights(folder)
+            model.load_weights(path + folder)
             self.models.append(model)
 
-    def load_data(self, name, resolution='full'):
-        """Loads a test dataset on which to compute metrics.
-
-        Args:
-            name (str): one of 'Potsdam', 'Treadstone',
-            resolution (str): one of 'full', '10cm', '50cm', '100cm', '200cm'."""
+    def load_data(self, data):
+        """Loads a test dataset on which to compute metrics. Note that one can also just set the test_data attribute
+        directly."""
+        self.test_data = data
 
 
 
@@ -108,7 +123,7 @@ class SemSeg:
     def __init__(self, dim, ir=False, binary_class=None):
         self.dim = dim
         self.ir = ir
-        self.data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
+        self.data_path = 'Data/Potsdam/Numpy Arrays/'
         self.class_df = pd.read_csv(self.data_path + 'class_df.csv')
         self.model_list = 'No models have been loaded.'
 
