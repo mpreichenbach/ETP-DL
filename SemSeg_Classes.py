@@ -53,7 +53,7 @@ class Metrics:
         self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
 
     # methods
-    def load_models(self, names, dimensions, losses='cc'):
+    def load_models(self, backbones, losses='cc'):
         """Loads trained models with a given input dimensions.
 
         Args:
@@ -64,25 +64,21 @@ class Metrics:
             losses (list): list of strings giving the loss names of the corresponding models in the names list (can be
                             cc for categorical crossentropy, iou for Intersection-over-Union, or dice."""
 
-        if type(names) == 'str':
-            model_list = [names]
-        elif type(names) == 'list':
-            model_list = names
+        model_list = []
+        loss_list = []
+
+        if isinstance(backbones, str):
+            model_list = [backbones]
+        elif isinstance(backbones, list):
+            model_list = backbones
         else:
             print('Please pass model name(s) as string (or list of strings).')
 
-        if type(dimensions) == 'int':
-            dim_list = [dimensions]
-        elif type(dimensions) == 'list':
-            dim_list = dimensions
-        else:
-            print('Please pass dimension(s) as integer (or list of integers).')
-
-        if type(losses) == 'str':
+        if isinstance(losses, str):
             loss_list = []
             for name in model_list:
                 loss_list.append(losses)
-        elif type(losses) == 'list':
+        elif isinstance(losses, list):
             loss_list = losses
         else:
             print('Please pass dimension(s) as string (or list of strings).')
@@ -91,22 +87,23 @@ class Metrics:
         n = len(model_list)
 
         for i in range(n):
-            folder = model_list[i] + '_' + dim_list[i] + '_' + loss_list[i]
-            dim_tuple = (dim_list[i], dim_list[i], 3)
+            folder = model_list[i] + '_' + str(self.dimensions) + '_' + loss_list[i] + '/'
+            dim_tuple = (self.dimensions, self.dimensions, 3)
             model = pt_model(model_list[i], dim_tuple, self.n_classes)
 
             model.load_weights(path + folder)
-            model.name = folder
+            model._name = folder[0:-1]
             self.models.append(model)
 
-    def load_data(self, data):
+    def load_data(self):
         """Loads a test dataset on which to compute metrics. Note that one can also just set the test_data attribute
         directly."""
+
         if self.source == 'Potsdam':
             folder = 'Data/Potsdam/Numpy Arrays/Test/'
             rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
             labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
-            enc = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '.npy')
         elif self.source == 'Treadstone':
             folder = 'Data/Treadstone/'
             rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
@@ -132,13 +129,13 @@ class Metrics:
             tic = time.perf_counter()
             y_pred = model.predict(self.data[0][choices])
             toc = time.perf_counter()
-            print('Finished predictions for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
+            print('Finished predictions for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
             table.loc[model.name, 'Accuracy'] = total_acc(y_true, y_pred)
-            table.loc[model.name, 'IoU'] = - iou_loss(y_true, y_pred) + 1
-            table.loc[model.name, 'Dice'] = - dice_loss(y_true, y_pred) + 1
+            table.loc[model.name, 'IoU'] = - (iou_loss(y_true, y_pred) + 1)
+            table.loc[model.name, 'Dice'] = - (dice_loss(y_true, y_pred) + 1)
             table.loc[model.name, 'GPU Inference Time'] = batch_time
 
         self.score_table = table

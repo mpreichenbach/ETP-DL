@@ -1,12 +1,4 @@
-import os
-import time
-import numpy as np
-import pandas as pd
 import tensorflow as tf
-from SemSeg_Classes import SemSeg
-from matplotlib import pyplot as plt
-from helper_functions import pt_model, oh_to_rgb, vec_to_oh
-from tensorflow.keras.callbacks import TerminateOnNaN, ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 
 
 def iou_loss(y_true, y_pred):
