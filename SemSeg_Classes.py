@@ -40,7 +40,7 @@ class Metrics:
     # attributes
     def __init__(self, source, dimensions):
         """Args:
-            project (str): one of 'Potsdam', 'Treadstone',
+            source (str): one of 'Potsdam', 'Treadstone',
             dimensions (int): one of 256 or 512. """
 
         self.confusion_matrices = []
@@ -85,7 +85,7 @@ class Metrics:
         elif type(losses) == 'list':
             loss_list = losses
         else:
-            print('Please pass dimension(S) as string (or list of strings).')
+            print('Please pass dimension(s) as string (or list of strings).')
 
         path = 'Saved Models/Fully Trained Models/'
         n = len(model_list)
@@ -162,17 +162,6 @@ class Metrics:
             self.confusion_matrices.append(table)
 
 
-
-
-
-
-
-
-
-
-
-
-
 class SemSeg:
     """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
 
@@ -187,7 +176,7 @@ class SemSeg:
         if binary_class:
             self.classes = [binary_class]
         else:
-            self.classes = (self.class_df)['name'].tolist()
+            self.classes = self.class_df['name'].tolist()
 
         if ir:
             if binary_class:
