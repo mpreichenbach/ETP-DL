@@ -29,6 +29,38 @@ class DigitalGlobeDataset:
 
         return sats, masks, oh_encoded
 
+
+class Metrics:
+    """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats. Test
+    data can be either one-hot encoded, or have integer labels."""
+
+    # attributes
+    def __init__(self):
+        self.models = []
+        self.test_data = []
+        self.data_source = ''
+        self.label_dict = {}
+
+    def load_models(self, names, dimensions, losses='categorical_crossentropy'):
+        """Loads trained models with a given input dimensions.
+
+        Args:
+            names (list): a list of strings, with names taken from the list of pretrained backbones (see the
+                            pretrained_weights attribute of SemSeg),
+            dimensions (list): list of integers giving the dimensions of the input image of the corresponding model in
+                            the names list,
+            losses (list): list of strings giving the loss names of the corresponding models in the names list."""
+
+        if type(names) == 'str':
+            model_list = [names]
+        elif type(names) != 'list':
+
+
+    # methods
+    def metrics_table(self):
+
+
+
 class SemSeg:
     """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
 
@@ -38,6 +70,7 @@ class SemSeg:
         self.ir = ir
         self.data_path = 'Data/ISPRS Potsdam/Numpy Arrays/'
         self.class_df = pd.read_csv(self.data_path + 'class_df.csv')
+        self.model_list = 'No models have been loaded.'
 
         if binary_class:
             self.classes = [binary_class]
@@ -110,7 +143,6 @@ class SemSeg:
                 return [sats, enc]
 
 
-
 #####
 # Untrained models
 #####
@@ -171,3 +203,30 @@ class Unet:
         cnn.compile(optimizer=opt, loss=loss)
 
         return cnn
+
+# ap_imgs = np.zeros((17, 3456, 4608), dtype=np.uint8)
+# ap_onehot = np.zeros((17, 3456, 4608, 6), dtype=np.uint8)
+# fc_imgs = np.zeros((16, 3000, 4000), dtype=np.uint8)
+# fc_onehot = np.zeros((16, 3000, 4000, 6), dtype=np.uint8)
+#
+# for string in folders:
+#     folder_path = 'Data/FC_AP_CC/' + string + '/labels/'
+#     files = os.listdir(folder_path)
+#     for i in range(len(files)):
+#         im = Image.open(folder_path + files[i])
+#         arr = np.asarray(im)
+#         ap_imgs[i] = arr
+#
+#     if string == 'AP':
+#         for n in range(17):
+#             print('Working on image ' + str(n) + '/' + str(17) + '.')
+#             for i in range(3456):
+#                 for j in range(4608):
+#                     ap_onehot[n, i, j] = cc_dict[ap_imgs[n, i, j]]
+#
+#     if string == 'FC':
+#         for n in range(16):
+#             print('Working on image ' + str(n) + '/' + str(16) + '.')
+#             for i in range(3000):
+#                 for j in range(4000):
+#                     fc_onehot[n, i, j] = cc_dict[ap_imgs[n, i, j]]
