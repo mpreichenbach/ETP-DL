@@ -160,9 +160,11 @@ class Metrics:
             y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])), dim=self.n_classes)
             table = (100 * confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')).round(2)
             cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
-            print('Finished confusion matrix for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
+            print('Finished confusion matrix for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
 
             self.confusion_matrices.append(cm)
+
+            ### Add methods to: generate views of sample images, run everything and save to a folder.
 
 
 class SemSeg:
