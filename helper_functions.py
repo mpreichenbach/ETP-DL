@@ -541,6 +541,8 @@ def oh_to_label(oh_array, dim):
     holder = np.zeros(oh_array.shape[0:3])
 
     for n in range(oh_array.shape[0]):
+        if n % 50 == 0:
+            print(n)
         for i in range(oh_array.shape[1]):
             for j in range(oh_array.shape[2]):
                 holder[n, i, j] = np.asarray(label_dict[tuple(oh_array[n, i, j])])
@@ -555,6 +557,8 @@ def label_to_oh(label_array, dim):
     holder = np.zeros(label_array.shape + tuple(dim))
 
     for n in range(label_array.shape[0]):
+        if n % 50 == 0:
+            print(n)
         for i in range(label_array.shape[1]):
             for j in range(label_array.shape[2]):
                 holder[n, i, j] = np.asarray(label_dict[tuple(label_array[n, i, j])])

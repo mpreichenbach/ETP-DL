@@ -126,6 +126,9 @@ class Metrics:
         for i in range(len(self.models)):
             model = self.models[i]
 
+            # this line exists only to ensure that the next model.predict isn't the first; inf times are wrong otherwise
+            model.predict(self.data[0][0:5])
+
             tic = time.perf_counter()
             y_pred = model.predict(self.data[0][choices])
             toc = time.perf_counter()
@@ -133,10 +136,10 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            table.loc[model.name, 'Accuracy'] = total_acc(y_true, y_pred)
-            table.loc[model.name, 'IoU'] = - (iou_loss(y_true, y_pred) + 1)
-            table.loc[model.name, 'Dice'] = - (dice_loss(y_true, y_pred) + 1)
-            table.loc[model.name, 'GPU Inference Time'] = batch_time
+            table.loc[model.name, 'Accuracy'] = round(total_acc(y_true, y_pred), 2)
+            table.loc[model.name, 'IoU'] = round(- iou_loss(y_true, y_pred).numpy() + 1, 2)
+            table.loc[model.name, 'Dice'] = round(- dice_loss(y_true, y_pred).numpy() + 1, 2)
+            table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
 
         self.score_table = table
 
