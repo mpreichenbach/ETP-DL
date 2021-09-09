@@ -126,13 +126,15 @@ class Metrics:
         names = [x.name for x in self.models]
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
+        input = self.data[0][choices]
         table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
+
+        # in order to get accurate inferences times, we first need these lines to load the models into memory
+        y_pred = self.models[0].predict(self.data[0][choices])
+        y_pred = self.models[1].predict(self.data[0][choices])
 
         for i in range(len(self.models)):
             model = self.models[i]
-
-            # these lines exist only to ensure that the next model.predict isn't the first; inf times are wrong otherwise
-            _ = model.predict(self.data[0][0:5])
 
             tic = time.perf_counter()
             y_pred = model.predict(self.data[0][choices])
