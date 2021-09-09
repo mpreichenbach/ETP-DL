@@ -156,10 +156,11 @@ class Metrics:
         for i in range(len(self.models)):
             model = self.models[i]
             y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])), dim=self.n_classes)
-            table = confusion_matrix(y_true, y_pred, labels=self.lc_classes, normalize='true')
+            table = (100 * confusion_matrix(y_true, y_pred, normalize='true')).round(2)
+            cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
             print('Finished confusion matrix for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
 
-            self.confusion_matrices.append(table)
+            self.confusion_matrices.append(cm)
 
 
 class SemSeg:
