@@ -155,8 +155,10 @@ class Metrics:
 
         for i in range(len(self.models)):
             model = self.models[i]
+
+            print('Converting predictions to integer labels on {} images.'.format(sample_size))
             y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])), dim=self.n_classes)
-            table = (100 * confusion_matrix(y_true, y_pred, normalize='true')).round(2)
+            table = (100 * confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')).round(2)
             cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
             print('Finished confusion matrix for model ' + model.name + '({}/{}).'.format(i + 1, len(self.models)))
 
