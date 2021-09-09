@@ -110,11 +110,18 @@ class Metrics:
 
         self.data = [rgb, labels, enc]
 
-    def make_scores(self, sample_size=500):
+    def make_scores(self, samples=None):
         """Sets self.score_table as a dataframe with predicted metrics for each model in self.models.
 
         Args:
-            sample_size (int): the number of randomly chosen tiles from which to generate the metrics."""
+            sample (int): the number of randomly chosen tiles from which to generate the metrics."""
+
+        if samples is None and self.dimensions == 256:
+            sample_size = 500
+        elif samples is None and self.dimensions == 512:
+            sample_size = 125
+        else:
+            sample_size = samples
 
         names = [x.name for x in self.models]
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
@@ -141,12 +148,19 @@ class Metrics:
 
         self.score_table = table
 
-    def make_confusion(self, sample_size=500):
+    def make_confusion(self, samples=None):
         """Sets self.confusion_tables as a list of confusion tables for each entry of self.models. Note that this
         process may take a long time if you have large datasets or many models to compare.
 
         Args:
-            sample_size (int): the number of randomly chosen tiles from which to generate the confusion tables."""
+            samples (int): the number of randomly chosen tiles from which to generate the confusion tables."""
+
+        if samples is None and self.dimensions == 256:
+            sample_size = 500
+        elif samples is None and self.dimensions == 512:
+            sample_size = 125
+        else:
+            sample_size = samples
 
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[1][choices]
