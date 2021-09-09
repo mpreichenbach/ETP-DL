@@ -53,22 +53,20 @@ class Metrics:
         self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
 
     # methods
-    def load_models(self, backbones, losses='cc'):
+    def load_models(self, backbones=None, losses='cc'):
         """Loads trained models with a given input dimensions.
 
         Args:
-            names (list): a list of strings, with names taken from the list of pretrained backbones (see the
-                            pretrained_weights attribute of SemSeg),
-            dimensions (list): list of integers giving the dimensions of the input image of the corresponding model in
-                            the names list,
+            backbones (list): a list of strings, with names taken from the list of pretrained backbones (see the
+                            pretrained_weights attribute of SemSeg); defaults to ['VGG16', 'VGG19'],
             losses (list): list of strings giving the loss names of the corresponding models in the names list (can be
                             cc for categorical crossentropy, iou for Intersection-over-Union, or dice."""
 
         model_list = []
         loss_list = []
 
-        if isinstance(backbones, str):
-            model_list = [backbones]
+        if backbones is None:
+            model_list = ['VGG16', 'VGG19']
         elif isinstance(backbones, list):
             model_list = backbones
         else:
@@ -126,8 +124,8 @@ class Metrics:
         for i in range(len(self.models)):
             model = self.models[i]
 
-            # this line exists only to ensure that the next model.predict isn't the first; inf times are wrong otherwise
-            model.predict(self.data[0][0:5])
+            # these lines exist only to ensure that the next model.predict isn't the first; inf times are wrong otherwise
+            _ = model.predict(self.data[0][0:5])
 
             tic = time.perf_counter()
             y_pred = model.predict(self.data[0][choices])
@@ -136,9 +134,9 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            table.loc[model.name, 'Accuracy'] = round(total_acc(y_true, y_pred), 2)
-            table.loc[model.name, 'IoU'] = round(- iou_loss(y_true, y_pred).numpy() + 1, 2)
-            table.loc[model.name, 'Dice'] = round(- dice_loss(y_true, y_pred).numpy() + 1, 2)
+            table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
+            table.loc[model.name, 'IoU'] = round(1 - iou_loss(y_true, y_pred).numpy(), 2)
+            table.loc[model.name, 'Dice'] = round(1 - dice_loss(y_true, y_pred).numpy(), 2)
             table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
 
         self.score_table = table
