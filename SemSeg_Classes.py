@@ -42,7 +42,7 @@ class Metrics:
             source (str): one of 'Potsdam', 'Treadstone',
             dimensions (int): one of 256 or 512. """
 
-        self.confusion_matrices = []
+        self.confusion_tables = []
         self.data = []
         self.dimensions = dimensions
         self.models = []
@@ -113,7 +113,7 @@ class Metrics:
         """Sets self.score_table as a dataframe with predicted metrics for each model in self.models.
 
         Args:
-            sample (int): the number of randomly chosen tiles from which to generate the metrics."""
+            samples (int): the number of randomly chosen tiles from which to generate the metrics."""
 
         if samples is None and self.dimensions == 256:
             sample_size = 500
@@ -129,14 +129,14 @@ class Metrics:
         table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
-        y_pred = self.models[0].predict(self.data[0][choices])
-        y_pred = self.models[1].predict(self.data[0][choices])
+        self.models[0].predict(input)
+        self.models[1].predict(input)
 
         for i in range(len(self.models)):
             model = self.models[i]
 
             tic = time.perf_counter()
-            y_pred = model.predict(self.data[0][choices])
+            y_pred = model.predict(input)
             toc = time.perf_counter()
             print('Finished predictions for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
@@ -175,7 +175,7 @@ class Metrics:
             cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
             print('Finished confusion matrix for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
 
-            self.confusion_matrices.append(cm)
+            self.confusion_tables.append(cm)
 
     def view_predictions(self, n_tiles=4, choices=None, cmap='Accent'):
         """See notes for view_tiles() in helper_functions.py.
@@ -194,7 +194,13 @@ class Metrics:
                    cmap=cmap)
 
     def make_and_save(self, path):
-
+        """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder."""
+        self.make_scores()
+        self.make_confusion()
+        self.score_table.to_csv(path + 'Score_table.csv')
+        for i in range(len(self.confusion_tables)):
+            name = self.models[i].name
+            self.confusion_tables[i].to_csv(path + name + '.csv')
 
 
 class SemSeg:
