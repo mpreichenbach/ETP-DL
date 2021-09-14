@@ -34,8 +34,7 @@ class DigitalGlobeDataset:
 
 
 class Metrics:
-    """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats. Test
-    data can be either one-hot encoded, or have integer labels."""
+    """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats."""
 
     # attributes
     def __init__(self, source, dimensions):
@@ -178,7 +177,10 @@ class Metrics:
 
             self.confusion_matrices.append(cm)
 
-            ### Add methods to: generate views of sample images, run everything and save to a folder.
+    # def view_images(self, n):
+
+
+    ### Add methods to: generate views of sample images, run everything and save to a folder.
 
 
 class SemSeg:

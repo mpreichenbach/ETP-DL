@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.colors import Normalize
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
@@ -591,56 +592,57 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, choices, model_a, a_name, model_b, b_name, class_df, bin_class=None, binary=False, num=5):
+def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent'):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
     Args:
         sats (ndarray): a collection of satellite images with shape (#tiles, height, width, 3),
         masks (ndarray): the associated collection of ground-truth masks,
-        model_a (Keras model): the first model to compare,
-        a_name (str): the name of model_a
-        model_b (Keras model): the second model to compare,
-        b_name (str): the name of model_b,
-        class_df (pd.DataFrame): the dataframe containing RGB values for mask,
-        bin_class (string): the name from class_df of the class to keep if binary=True,
-        binary (Boolean): if true, masks will be converted to a binary mask,
-        num (int): the number of samples to show."""
+        model_list (list): a list of Keras model objects,
+        num (int): the number of tiles to show
+        choices (Numpy array): a vector of indices in range(len(sats)) to select specific tiles to display.
+        """
 
-    s_choices = sats[choices]
-    preds = []
+    n_models = len(models)
+    model_list = models
 
-    if binary:
-        m_choices = binary_to_bw(rgb_to_binary(masks[choices], class_df, name=bin_class))
-        pred_a = binary_to_bw(vec_to_oh(model_a.predict(sats[choices])))
-        pred_b = binary_to_bw(vec_to_oh(model_b.predict(sats[choices])))
-
+    if choices is not None:
+        idx = choices
     else:
-        m_choices = masks[choices]
-        pred_a = oh_to_rgb(vec_to_oh(model_a.predict(sats[choices])), class_df)
-        pred_b = oh_to_rgb(vec_to_oh(model_b.predict(sats[choices])), class_df)
+        idx = np.random.choice(len(sats), n_tiles, replace=True)
 
-    fig, axs = plt.subplots(num, 4)
+    s_choices = sats[idx]
+    m_choices = masks[idx]
+    pred_list = []
 
-    for i in range(num):
+    for model in model_list:
+        arr = oh_to_label(vec_to_oh(model.predict(s_choices)), classes).astype(np.uint8)
+        pred_list.append(arr)
+
+    # this ensures that the colormapping knows the full range of labels for each imshow below.
+    norm = Normalize(vmin=0, vmax=classes-1)
+
+    fig, axs = plt.subplots(n_tiles, 2 + n_models, constrained_layout=True)
+
+    for i in range(n_tiles):
         if i == 0:
             axs[i, 0].imshow(s_choices[i])
-            axs[i, 0].set_title("Satellite")
-            axs[i, 1].imshow(m_choices[i])
-            axs[i, 1].set_title("Ground Truth")
-            axs[i, 2].imshow(pred_a[i])
-            axs[i, 2].set_title(str(a_name))
-            axs[i, 3].imshow(pred_b[i])
-            axs[i, 3].set_title(str(b_name))
+            axs[i, 0].set_title("RGB")
+            axs[i, 1].imshow(m_choices[i], cmap=cmap, norm=norm)
+            axs[i, 1].set_title("Truth")
+            for j in range(n_models):
+                axs[i, 2 + j].imshow(pred_list[j][i], cmap=cmap, norm=norm)
+                axs[i, 2 + j].set_title(model_list[j].name)
 
         else:
             axs[i, 0].imshow(s_choices[i])
-            axs[i, 1].imshow(m_choices[i])
-            axs[i, 2].imshow(pred_a[i])
-            axs[i, 3].imshow(pred_b[i])
+            axs[i, 1].imshow(m_choices[i], cmap=cmap, norm=norm)
+            for j in range(n_models):
+                axs[i, 2 + j].imshow(pred_list[j][i], cmap=cmap, norm=norm)
 
     plt.setp(axs, xticks=[], yticks=[])
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 
