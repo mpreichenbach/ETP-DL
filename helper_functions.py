@@ -609,6 +609,7 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
 
     if choices is not None:
         idx = choices
+        n_tiles = len(idx)
     else:
         idx = np.random.choice(len(sats), n_tiles, replace=True)
 

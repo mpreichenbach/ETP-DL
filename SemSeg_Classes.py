@@ -4,7 +4,7 @@ import pandas as pd
 import time
 from sklearn.metrics import confusion_matrix
 from metrics import iou_loss, dice_loss, total_acc
-from helper_functions import unet_main_block, pt_model, vec_to_oh, oh_to_label
+from helper_functions import unet_main_block, pt_model, vec_to_oh, oh_to_label, view_tiles
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
@@ -177,10 +177,24 @@ class Metrics:
 
             self.confusion_matrices.append(cm)
 
-    # def view_images(self, n):
+    def view_predictions(self, n_tiles=4, choices=None, cmap='Accent'):
+        """See notes for view_tiles() in helper_functions.py.
 
+        Args:
+            n_tiles (int): the number of tiles to view,
+            choices (array-like): indices of tiles to pull from self.data; default selects randomly,
+            cmap (string): the name of a Matplotlib colormap."""
 
-    ### Add methods to: generate views of sample images, run everything and save to a folder.
+        view_tiles(sats=self.data[0],
+                   masks=self.data[1],
+                   models=self.models,
+                   n_tiles=n_tiles,
+                   classes=self.n_classes,
+                   choices=choices,
+                   cmap=cmap)
+
+    def make_and_save(self, path):
+
 
 
 class SemSeg:
