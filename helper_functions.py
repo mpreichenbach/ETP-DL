@@ -555,17 +555,18 @@ def label_to_oh(label_array, dim):
     tuples = [tuple(x) for x in arr_list]
     labels = np.arange(dim, dtype=np.uint8).tolist()
     label_dict = dict(zip(labels, tuples))
-    holder = np.zeros(label_array.shape + tuple(dim))
+    holder = np.zeros(label_array.shape + (dim,), dtype=np.uint8)
 
     for n in range(label_array.shape[0]):
         if n % 50 == 0:
             print(n)
         for i in range(label_array.shape[1]):
             for j in range(label_array.shape[2]):
-                holder[n, i, j] = np.asarray(label_dict[tuple(label_array[n, i, j])], dtype=np.uint8)
+                holder[n, i, j] = np.asarray(label_dict[label_array[n, i, j]]).astype(np.uint8)
 
-    return holder.astype(np.uint8)
+    holder = holder.astype(np.uint8)
 
+    return holder
 
 def vec_to_oh(array, progress=False, cycle=100):
     """This function takes "array" and converts its depth vectors to one-hot encodings.

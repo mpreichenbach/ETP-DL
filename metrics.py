@@ -60,3 +60,68 @@ def total_acc(y_true, y_pred):
 
     return proportion
 
+# enc = label_to_oh(label_holder, 6)
+# np.save('Data/Potsdam/Downsampled/enc_10cm_256.npy', enc)
+#
+# for res in [50, 100, 200]:
+#     for tile_dim in [256, 512]:
+#         path = 'Data/Potsdam/Downsampled RGB/' + str(res) + 'cm/'
+#         files = os.listdir(path)
+#         n = len(files)
+#         test = Image.open(path + files[0])
+#         arr = np.asarray(test, dtype=np.uint8)
+#         dim = arr.shape[0]
+#         holder_list = []
+#
+#         for file in files:
+#             print(file)
+#             with Image.open(path + file) as im:
+#                 arr = np.asarray(im, dtype=np.uint8)
+#                 for i in range(int(dim / tile_dim)):
+#                     for j in range(int(dim / tile_dim)):
+#                         tile = arr[tile_dim * i: tile_dim * (i + 1), tile_dim * j: tile_dim * (j + 1)]
+#                         tile = tile.reshape((1,) + tile.shape)
+#                         holder_list.append(tile)
+#
+#         rgb = np.concatenate(holder_list, axis=0)
+#
+#         path = 'Data/Potsdam/Downsampled Labels/' + str(res) + 'cm/'
+#         files = os.listdir(path)
+#         n = len(files)
+#         test = Image.open(path + files[0])
+#         arr = np.asarray(test, dtype=np.uint8)
+#         dim = arr.shape[0]
+#         holder_list = []
+#
+#         for file in files:
+#             print(file)
+#             with Image.open(path + file) as im:
+#                 arr = np.asarray(im, dtype=np.uint8)
+#                 for i in range(int(dim / tile_dim)):
+#                     for j in range(int(dim / tile_dim)):
+#                         tile = arr[tile_dim * i: tile_dim * (i + 1), tile_dim * j: tile_dim * (j + 1)]
+#                         tile = tile.reshape((1,) + tile.shape)
+#                         holder_list.append(tile)
+#
+#         labels = np.concatenate(holder_list, axis=0)
+#
+#         list_to_drop = []
+#         for n in range(labels.shape[0]):
+#             if n % 50 == 0:
+#                 print(n)
+#             for i in range(labels.shape[1]):
+#                 for j in range(labels.shape[2]):
+#                     if tuple(labels[n, i, j]) not in rgb_list:
+#                         list_to_drop.append(n)
+#
+#         rgb = np.delete(rgb, list_to_drop, axis=0)
+#         labels = np.delete(rgb, list_to_drop, axis=0)
+#
+#         enc = label_to_oh(labels, 6)
+#
+#         np.save('Data/Potsdam/Numpy Arrays/Downsampled/rgb_' + str(res) + 'cm_' + str(tile_dim) + '.npy', rgb)
+#         np.save('Data/Potsdam/Numpy Arrays/Downsampled/labels_' + str(res) + 'cm_' + str(tile_dim) + '.npy', labels)
+#         np.save('Data/Potsdam/Numpy Arrays/Downsampled/enc_' + str(res) + 'cm_' + str(tile_dim) + '.npy', enc)
+
+
+
