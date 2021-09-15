@@ -592,7 +592,7 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent'):
+def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent', display=True):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -643,8 +643,9 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
                 axs[i, 2 + j].imshow(pred_list[j][i], cmap=cmap, norm=norm)
 
     plt.setp(axs, xticks=[], yticks=[])
-    # plt.tight_layout()
-    plt.show()
+
+    if display:
+        plt.show()
 
 
 def unet_main_block(m, n_filters, dim, bn, do_rate):

@@ -22,10 +22,12 @@ class Metrics:
         self.data = []
         self.dimensions = dimensions
         self.models = []
-        self.n_classes = 6
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
         self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
+
+        if source in ['Potsdam', 'Treadstone']:
+            self.n_classes = 6
 
     # methods
     def load_models(self, backbones=None, losses='cc'):
@@ -171,6 +173,11 @@ class Metrics:
 
     def make_and_save(self, path):
         """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder."""
+        if self.models == []:
+            self.load_models()
+        if self.data == []:
+            self.load_data()
+
         self.make_scores()
         self.make_confusion()
         self.score_table.to_csv(path + 'Score_table.csv')
