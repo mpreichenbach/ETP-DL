@@ -9,30 +9,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 
 
-class DigitalGlobeDataset:
-    """DeepGlobe Land Cover Classification Challenge dataset. Reads in Numpy arrays, converts the satellite image values
-     to floats, and provides the land-cover classifications in a dataframe."""
-
-    def __init__(self, data_path):
-        self.data_path = data_path
-
-    def class_dict(self):
-        class_dict = pd.read_csv(os.path.join(self.data_path, 'class_dict.csv'))
-
-        return class_dict
-
-    def load(self, dim):
-        # loads the sat, mask, and one-hot encoded files, while transforming sat values to floats in [0,1]
-        assert dim in {64, 128, 256}, "dim parameter must be in {64, 128, 256}"
-
-        sats = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " sat tiles.npy").astype(np.float32)
-        sats /= 255
-        masks = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " mask tiles.npy")
-        oh_encoded = np.load(self.data_path + "/Numpy Arrays/" + str(dim) + "x" + str(dim) + " one-hot encoded tiles.npy")
-
-        return sats, masks, oh_encoded
-
-
 class Metrics:
     """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats."""
 
