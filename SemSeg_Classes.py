@@ -171,7 +171,7 @@ class Metrics:
                    choices=choices,
                    cmap=cmap)
 
-    def make_and_save(self, path):
+    def make_and_save(self, path, images=True):
         """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder."""
         if self.models == []:
             self.load_models()
@@ -186,7 +186,9 @@ class Metrics:
             name = self.models[i].name
             self.confusion_tables[i].to_csv(path + name + '.csv')
 
-        self.view_predictions()
+        if images:
+            im_path = path + 'images'
+            self.view_predictions(display=False, path=im_path)
 
 
 class SemSeg:
