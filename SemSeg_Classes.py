@@ -181,9 +181,12 @@ class Metrics:
         self.make_scores()
         self.make_confusion()
         self.score_table.to_csv(path + 'Score_table.csv')
+
         for i in range(len(self.confusion_tables)):
             name = self.models[i].name
             self.confusion_tables[i].to_csv(path + name + '.csv')
+
+        self.view_predictions()
 
 
 class SemSeg:

@@ -592,7 +592,7 @@ def vec_to_oh(array, progress=False, cycle=100):
     oh_array = oh_array.astype(np.uint8)
     return oh_array
 
-def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent', display=True):
+def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent', display=True, path=None):
     """This function outputs a PNG comparing satellite images, their associated ground-truth masks, and a given model's
     prediction. Note that the images are selected randomly from the sats array.
 
@@ -601,7 +601,10 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
         masks (ndarray): the associated collection of ground-truth masks,
         model_list (list): a list of Keras model objects,
         num (int): the number of tiles to show
-        choices (Numpy array): a vector of indices in range(len(sats)) to select specific tiles to display.
+        choices (Numpy array): a vector of indices in range(len(sats)) to select specific tiles to display,
+        cmap (str): a Matplotlib colorplot name,
+        display (Boolean): whether to display the figure,
+        path (str or None): where to save the figure.
         """
 
     n_models = len(models)
@@ -646,6 +649,9 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
 
     if display:
         plt.show()
+
+    if path is not None:
+        plt.savefig(path, bbox_inches='tight')
 
 
 def unet_main_block(m, n_filters, dim, bn, do_rate):
