@@ -192,29 +192,18 @@ class Metrics:
 
 
 class SemSeg:
-    """Loads various data, compiles and fits NN models with options for pretraining, and functions to view results."""
 
     # attributes
-    def __init__(self, dim, ir=False, binary_class=None):
+    def __init__(self, source, dim,):
+        """Loads a data and provides resources to load models to train for semantic segmentation.
+        Args:
+            source (str): member of the list ['Potsdam', 'Treadstone'],
+            dim (int): member of the list [256, 512]."""
+
         self.dim = dim
-        self.ir = ir
-        self.data_path = 'Data/Potsdam/Numpy Arrays/'
+        self.data_path = 'Data/' + source + '/Numpy Arrays/'
         self.class_df = pd.read_csv(self.data_path + 'class_df.csv')
         self.model_list = 'No models have been loaded.'
-
-        if binary_class:
-            self.classes = [binary_class]
-        else:
-            self.classes = self.class_df['name'].tolist()
-
-        if ir:
-            if binary_class:
-                self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' binary ' + binary_class + ' imagery, ' + \
-                               'with infrared channel.'
-            else:
-                self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' binary ' + binary_class + ' imagery.'
-        else:
-            self.summary = 'Class for ' + str(dim) + 'x' + str(dim) + ' imagery'
 
         # the following method is filled from https://keras.io/api/applications/ and may be updated in the future
         self.pretrained_models = ['Xception', 'VGG16', 'VGG19', 'ResNet50', 'ResNet101', 'ResNet152', 'ResNet50V2',
@@ -223,54 +212,21 @@ class SemSeg:
                                   'NASNetLarge', 'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
                                   'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7']
 
-    # if you want separate objects for the data, call this function
-    def load_data(self, load_masks=True, ttv_split=True, test_only=False):
-        if self.ir:
-            sats = np.load(self.data_path + 'RGBIR_tiles_' + str(self.dim) + '.npy')
-        else:
-            sats = np.load(self.data_path + 'RGB_tiles_' + str(self.dim) + '.npy')
 
-        if len(self.classes) == 1:
-            enc = np.load(self.data_path + 'Binary Classification/' + str(self.classes[0]) + '_' + str(self.dim) + '.npy')
-        else:
-            enc = np.load(self.data_path + 'Encoded_tiles_' + str(self.dim) + '.npy')
+    def load_data(self):
+        rgb_train = np.load(self.data_path + 'Train/RGB_' + str(self.dim) + '.npy')
+        rgb_val = np.load(self.data_path + 'Validation/RGB_' + str(self.dim) + '.npy')
+        rgb_test = np.load(self.data_path + 'Test/RGB_' + str(self.dim) + '.npy')
 
-        if load_masks:
-            masks = np.load(self.data_path + 'Label_tiles_' + str(self.dim) + '.npy')
+        labels_train = np.load(self.data_path + 'Train/Labels_' + str(self.dim) + '.npy')
+        labels_val = np.load(self.data_path + 'Validation/Labels_' + str(self.dim) + '.npy')
+        labels_test = np.load(self.data_path + 'Test/Labels_' + str(self.dim) + '.npy')
 
-        if ttv_split:
-            train_choices = np.load(self.data_path + 'Training_Choices_' + str(self.dim) + '.npy')
-            val_choices = np.load(self.data_path + 'Validation_Choices_' + str(self.dim) + '.npy')
+        enc_train = np.load(self.data_path + 'Train/Encoded_' + str(self.dim) + '.npy')
+        enc_val = np.load(self.data_path + 'Validation/Encoded_' + str(self.dim) + '.npy')
+        enc_test = np.load(self.data_path + 'Test/Encoded_' + str(self.dim) + '.npy')
 
-            sats_train = sats[train_choices]
-            holder = np.delete(sats, train_choices, axis=0)
-            sats_val = holder[val_choices]
-            sats_test = np.delete(holder, val_choices, axis=0)
-
-            if load_masks:
-                masks_train = masks[train_choices]
-                holder = np.delete(masks, train_choices, axis=0)
-                masks_val = holder[val_choices]
-                masks_test = np.delete(holder, val_choices, axis=0)
-
-            enc_train = enc[train_choices]
-            holder = np.delete(enc, train_choices, axis=0)
-            enc_val = holder[val_choices]
-            enc_test = np.delete(holder, val_choices, axis=0)
-
-            if test_only:
-                return [sats_test, masks_test, enc_test]
-
-            if load_masks:
-                return [sats_train, sats_val, sats_test, masks_train, masks_val, masks_test, enc_train, enc_val,
-                        enc_test]
-            else:
-                return [sats_train, sats_val, sats_test, enc_train, enc_val]
-        else:
-            if load_masks:
-                return [sats, masks, enc]
-            else:
-                return [sats, enc]
+        return [rgb_train, rgb_val, rgb_test, labels_train, labels_val, labels_test, enc_train, enc_val, enc_test]
 
 
 #####
