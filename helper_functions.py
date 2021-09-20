@@ -673,27 +673,3 @@ def unet_main_block(m, n_filters, dim, bn, do_rate):
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     return n
-
-nine_tags = [2115.330, 2098.446, 2047.456, 2166.456, 2183.456, 2047.512, 2098.512, 2217.512, 2251.512]
-trials = [2, 4, 4, 4, 4, 4, 4, 4, 4]
-sound = ['ChirpSaw', 'ChirpSquare', 'Control', 'Control', 'Control', 'ChirpSaw', 'ChirpSaw', 'ChirpSaw', 'ChirpSaw']
-path = "C:/Users/RDGRLMPR/Documents/Carp/Aggregated Data/withDropTags/Use these/"
-files = os.listdir(path)
-
-for name in files:
-    if name == files[0]:
-        AllData = pd.read_csv(path + name)
-    else:
-        to_add = pd.read_csv(path + name)
-        AllData = pd.concat([AllData, to_add], axis=0)
-    print(name)
-
-subset = AllData[AllData['TagCode'] == nine_tags[0]]
-
-for tag in nine_tags[1:]:
-    tag_subset = AllData[AllData['TagCode'] == tag]
-
-    subset = pd.concat([subset, tag_subset], axis=0)
-    del tag_subset
-
-    print('Finished subsetting for TagCode ' + str(tag) + '.')

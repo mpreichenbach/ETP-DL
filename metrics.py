@@ -21,8 +21,9 @@ def iou(y_true, y_pred):
     # voxel in the ground-truth and predicted tensors has at least one nonzero entry.
 
     iou_vec = i_totals / u_totals
+    scores = tf.reduce_mean(iou_vec, axis=0)
 
-    return iou_vec
+    return scores
 
 def dice(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the dice-loss for each class,
@@ -36,9 +37,10 @@ def dice(y_true, y_pred):
     denominator = tf.reduce_sum(y_true, axis=(1, 2)) + tf.reduce_sum(y_pred, axis=(1, 2))
 
     # As in iou() above, we don't need to enforce nonzero denominators
-    dice_vec = numerator / denominator
+    vec = numerator / denominator
+    scores = tf.reduce_mean(vec, axis=0)
 
-    return dice_vec
+    return scores
 
 def total_acc(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the total accuracy of the

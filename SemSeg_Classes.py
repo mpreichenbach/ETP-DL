@@ -61,7 +61,7 @@ class Metrics:
         else:
             print('Please pass dimension(s) as string (or list of strings).')
 
-        path = 'Saved Models/' + self.source
+        path = 'Saved Models/' + self.source + '/'
         n = len(model_list)
 
         for i in range(n):
@@ -116,7 +116,7 @@ class Metrics:
         input = self.data[0][choices]
         summary_table = pd.DataFrame(0, index=names, columns=['Accuracy', 'Mean IoU', 'Mean Dice',
                                                               'GPU Inference Time'])
-        score_table = pd.DataFrame(0, index=names, columns=iou_headers.append(dice_headers))
+        score_table = pd.DataFrame(0, index=names, columns=iou_headers + dice_headers)
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
         self.models[0].predict(input)
@@ -126,18 +126,18 @@ class Metrics:
             model = self.models[i]
 
             tic = time.perf_counter()
-            y_pred = model.predict(input)
+            y_pred = vec_to_oh(model.predict(input))
             toc = time.perf_counter()
             print('Finished predictions for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            iou_scores = iou(y_true, y_pred)
-            dice_scores = dice(y_true, y_pred)
+            iou_scores = iou(y_true, y_pred).numpy()
+            dice_scores = dice(y_true, y_pred).numpy()
 
             summary_table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
-            summary_table.loc[model.name, 'IoU'] = round(np.mean(iou_scores), 2)
-            summary_table.loc[model.name, 'Dice'] = round(np.mean(dice_scores), 2)
+            summary_table.loc[model.name, 'Mean IoU'] = round(np.mean(iou_scores.numpy()), 2)
+            summary_table.loc[model.name, 'Mean Dice'] = round(np.mean(dice_scores.numpy()), 2)
             summary_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
 
             for j in range(len(iou_scores)):
@@ -201,6 +201,7 @@ class Metrics:
         self.make_scores()
         self.make_confusion()
         self.score_table.to_csv(path + 'Score_table.csv')
+        self.summary_table.to_csv(path + 'Summary_table.csv')
 
         for i in range(len(self.confusion_tables)):
             name = self.models[i].name
