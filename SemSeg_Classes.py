@@ -61,7 +61,7 @@ class Metrics:
         else:
             print('Please pass dimension(s) as string (or list of strings).')
 
-        path = 'Saved Models/Fully Trained Models/'
+        path = 'Saved Models/' + self.source
         n = len(model_list)
 
         for i in range(n):
