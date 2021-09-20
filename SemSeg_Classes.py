@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import time
 from sklearn.metrics import confusion_matrix
-from metrics import iou_loss, dice_loss, total_acc
+from metrics import iou, dice, total_acc
 from helper_functions import unet_main_block, pt_model, vec_to_oh, oh_to_label, view_tiles
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
@@ -19,14 +19,14 @@ class Metrics:
             dimensions (int): one of 256 or 512,
             res (int): one of 10, 50, 100, 200, giving the spacial resolution in cm."""
 
+        self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.confusion_tables = []
         self.data = []
         self.dimensions = dimensions
-        self.downsampled = downsampled
         self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
         self.models = []
         self.resolution = res
-        self.score_table = pd.DataFrame(0, index=[], columns=[])
+        self.summary_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
 
         if source in ['Potsdam', 'Treadstone']:
@@ -108,10 +108,15 @@ class Metrics:
             sample_size = samples
 
         names = [x.name for x in self.models]
+        iou_headers = ['IoU: ' + class_name for class_name in self.lc_classes]
+        dice_headers = ['Dice: ' + class_name for class_name in self.lc_classes]
+
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
         input = self.data[0][choices]
-        table = pd.DataFrame(0, index=names, columns=['Accuracy', 'IoU', 'Dice', 'GPU Inference Time'])
+        summary_table = pd.DataFrame(0, index=names, columns=['Accuracy', 'Mean IoU', 'Mean Dice',
+                                                              'GPU Inference Time'])
+        score_table = pd.DataFrame(0, index=names, columns=iou_headers.append(dice_headers))
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
         self.models[0].predict(input)
@@ -127,12 +132,20 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
-            table.loc[model.name, 'IoU'] = round(1 - iou_loss(y_true, y_pred).numpy(), 2)
-            table.loc[model.name, 'Dice'] = round(1 - dice_loss(y_true, y_pred).numpy(), 2)
-            table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
+            iou_scores = iou(y_true, y_pred)
+            dice_scores = dice(y_true, y_pred)
 
-        self.score_table = table
+            summary_table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
+            summary_table.loc[model.name, 'IoU'] = round(np.mean(iou_scores), 2)
+            summary_table.loc[model.name, 'Dice'] = round(np.mean(dice_scores), 2)
+            summary_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
+
+            for j in range(len(iou_scores)):
+                score_table.loc[model.name, iou_headers[j]] = iou_scores[j]
+                score_table.loc[model.name, dice_headers[j]] = dice_scores[j]
+
+        self.summary_table = summary_table
+        self.score_table = score_table
 
     def make_confusion(self, samples=None):
         """Sets self.confusion_tables as a list of confusion tables for each entry of self.models. Note that this
