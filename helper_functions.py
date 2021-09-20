@@ -550,20 +550,20 @@ def oh_to_label(oh_array, dim):
 
     return holder.astype(np.uint8)
 
-def label_to_oh(label_array, dim):
+def label_to_oh(label_array, dict, dim):
     arr_list = np.identity(dim, dtype=np.uint8)
     tuples = [tuple(x) for x in arr_list]
     labels = np.arange(dim, dtype=np.uint8).tolist()
     label_ints = [int(x) for x in labels]
-    label_dict = dict(zip(label_ints, tuples))
-    holder = np.zeros(label_array.shape + (dim,), dtype=np.uint8)
+    # label_dict = dict(zip(label_ints, tuples))
+    holder = np.zeros(label_array.shape[0:3] + (dim,), dtype=np.uint8)
 
     for n in range(label_array.shape[0]):
         if n % 50 == 0:
             print(n)
         for i in range(label_array.shape[1]):
             for j in range(label_array.shape[2]):
-                holder[n, i, j] = np.asarray(label_dict[int(label_array[n, i, j])]).astype(np.uint8)
+                holder[n, i, j] = np.asarray(dict[tuple(label_array[n, i, j])]).astype(np.uint8)
 
     holder = holder.astype(np.uint8)
 

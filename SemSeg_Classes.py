@@ -13,18 +13,21 @@ class Metrics:
     """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats."""
 
     # attributes
-    def __init__(self, source, dimensions):
+    def __init__(self, source, dimensions, res=None):
         """Args:
             source (str): one of 'Potsdam', 'Treadstone',
-            dimensions (int): one of 256 or 512. """
+            dimensions (int): one of 256 or 512,
+            res (int): one of 10, 50, 100, 200, giving the spacial resolution in cm."""
 
         self.confusion_tables = []
         self.data = []
         self.dimensions = dimensions
+        self.downsampled = downsampled
+        self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
         self.models = []
+        self.resolution = res
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
-        self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
 
         if source in ['Potsdam', 'Treadstone']:
             self.n_classes = 6
@@ -73,12 +76,16 @@ class Metrics:
     def load_data(self):
         """Loads a test dataset on which to compute metrics. Note that one can also just set the test_data attribute
         directly."""
-
-        if self.source == 'Potsdam':
+        if self.source == 'Potsdam' and self.resolution is None:
             folder = 'Data/Potsdam/Numpy Arrays/Test/'
             rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
             labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
             enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '.npy')
+        elif self.source == 'Potsdam' and self.resolution is not None:
+            folder = 'Data/Potsdam/Numpy Arrays/Test/'
+            rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '_' + str(self.resolution) + 'cm.npy')
+            labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '_' + str(self.resolution) + 'cm.npy')
+            enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '_' + str(self.resolution) + 'cm.npy')
         elif self.source == 'Treadstone':
             folder = 'Data/Treadstone/'
             rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
