@@ -569,29 +569,15 @@ def label_to_oh(label_array, dict, dim):
 
     return holder
 
-def vec_to_oh(array, progress=False, cycle=100):
-    """This function takes "array" and converts its depth vectors to one-hot encodings.
+def vec_to_oh(array):
+    """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
 
     Args:
-        array (ndarray): numpy array that is likely the output of a NN model prediction,
-        progress (Boolean): if applied to a large array, toggle this to True to get the progress,
-        cycle (int): determines how often to print a report."""
+        array (ndarray): any array, but likely the output of a Keras model prediction."""
 
-    [samples, height, width, depth] = array.shape
-    identity = np.identity(depth)
+    comparison = np.equal(np.amax(array, axis=-1, keepdims=True), array)
+    oh_array = np.where(comparison, 1, 0).astype(np.uint8)
 
-    oh_array = np.zeros(array.shape)
-
-    for i in range(samples):
-        for j in range(height):
-            for k in range(width):
-                hot_spot = np.argmax(array[i, j, k])
-                oh_array[i, j, k, hot_spot] = 1
-
-        if progress and (i % cycle == 0):
-            print(str(i) + ' tiles complete out of ' + str(samples))
-
-    oh_array = oh_array.astype(np.uint8)
     return oh_array
 
 def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Accent', display=True, path=None):
