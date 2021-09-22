@@ -1,27 +1,23 @@
-import tensorflow as tf
-
+import numpy as np
 
 def iou(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-loss for each class,
     # and returns a vector of IoU scores. See https://en.wikipedia.org/wiki/Jaccard_index for more information.
-    # Note that I used Tensorflow math functions so that this may be incorporated into a Keras losses
 
-    y_true = tf.cast(y_true, dtype=tf.float32)
-    y_pred = tf.cast(y_pred, dtype=tf.float32)
+    # y_true = y_true.astype(np.float32)
+    # y_pred = y_pred.astype(np.float32)
 
-    intersection = tf.math.multiply(y_true, y_pred)
-    i_totals = tf.reduce_sum(intersection, axis=(1, 2))
-    union = tf.math.add(y_true, tf.math.add(y_pred, -intersection))
-    u_totals = tf.reduce_sum(union, axis=(1, 2))
+    intersection = np.multiply(y_true, y_pred)
+    i_totals = np.sum(intersection, axis=(0, 1, 2), dtype=np.uint8)
+    union = y_true + y_pred - intersection
+    u_totals = np.sum(union, axis=(0, 1, 2), dtype=np.uint8)
 
-    # Note that some references insist on adding 1 (or small epsilon) to the numerator and denominator, to avoid
-    # division by zero. This is important when the IoU is used to gauge accuracy of bounding box predictions in
-    # object-detection tasks, because it's possible that the true and predicted bounding boxes are both empty (i.e.,
-    # when the network predicts a true negative). But in semantic segmentation tasks this is unnecessary, since every
-    # voxel in the ground-truth and predicted tensors has at least one nonzero entry.
+    # the following division will result in nans, so we suppress the warnings since they're ignored later
+    with np.errstate(divide='ignore'):
+        iou_vec = i_totals / u_totals
 
-    iou_vec = i_totals / u_totals
-    scores = tf.reduce_mean(iou_vec, axis=0)
+    # to ignore than nans in the total, we use np.nansum()
+    scores = np.nansum(iou_vec, axis=0)
 
     return scores
 
