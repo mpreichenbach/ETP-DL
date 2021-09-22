@@ -534,21 +534,17 @@ def oh_to_rgb(oh_array, class_df):
     rgb_array = rgb_array.astype(np.uint8)
     return rgb_array
 
-def oh_to_label(oh_array, dim):
-    arr_list = np.identity(dim, dtype=np.uint8)
-    tuples = [tuple(x) for x in arr_list]
-    labels = np.arange(dim, dtype=np.uint8).tolist()
-    label_dict = dict(zip(tuples, labels))
-    holder = np.zeros(oh_array.shape[0:3])
+def oh_to_label(oh_array):
+    dim = oh_array.shape[-1]
+    arr_label = np.zeros(oh_array.shape, dtype=np.uint8)
 
-    for n in range(oh_array.shape[0]):
-        if n % 50 == 0:
-            print(n)
-        for i in range(oh_array.shape[1]):
-            for j in range(oh_array.shape[2]):
-                holder[n, i, j] = np.asarray(label_dict[tuple(oh_array[n, i, j])], dtype=np.uint8)
+    for i in range(dim):
+        arr_label[:, :, :, i] = np.where(oh_array[:, :, :, i] == 1, i, 0)
 
-    return holder.astype(np.uint8)
+
+    output = np.sum(arr_label, axis=-1, dtype=np.uint8)
+
+    return output
 
 def label_to_oh(label_array, dict, dim):
     arr_list = np.identity(dim, dtype=np.uint8)
