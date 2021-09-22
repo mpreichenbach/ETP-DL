@@ -132,12 +132,12 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            iou_scores = iou(y_true, y_pred).numpy()
-            dice_scores = dice(y_true, y_pred).numpy()
+            iou_scores = iou(y_true, y_pred)
+            dice_scores = dice(y_true, y_pred)
 
             summary_table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
-            summary_table.loc[model.name, 'Mean IoU'] = round(np.mean(iou_scores.numpy()), 2)
-            summary_table.loc[model.name, 'Mean Dice'] = round(np.mean(dice_scores.numpy()), 2)
+            summary_table.loc[model.name, 'Mean IoU'] = round(np.mean(iou_scores), 2)
+            summary_table.loc[model.name, 'Mean Dice'] = round(np.mean(dice_scores), 2)
             summary_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
 
             for j in range(len(iou_scores)):
