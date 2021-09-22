@@ -534,13 +534,7 @@ def oh_to_rgb(oh_array, class_df):
     return rgb_array
 
 def oh_to_label(oh_array):
-    dim = oh_array.shape[-1]
-    arr_label = np.zeros(oh_array.shape, dtype=np.uint8)
-
-    for i in range(dim):
-        arr_label[:, :, :, i] = np.where(oh_array[:, :, :, i] == 1, i, 0)
-
-    output = np.sum(arr_label, axis=-1, dtype=np.uint8)
+    output = np.argmax(oh_array, axis=-1, dtype=np.uint8)
 
     return output
 
