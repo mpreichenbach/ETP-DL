@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
 import tensorflow as tf
@@ -541,25 +540,16 @@ def oh_to_label(oh_array):
     for i in range(dim):
         arr_label[:, :, :, i] = np.where(oh_array[:, :, :, i] == 1, i, 0)
 
-
     output = np.sum(arr_label, axis=-1, dtype=np.uint8)
 
     return output
 
-def label_to_oh(label_array, dict, dim):
-    arr_list = np.identity(dim, dtype=np.uint8)
-    tuples = [tuple(x) for x in arr_list]
-    labels = np.arange(dim, dtype=np.uint8).tolist()
-    label_ints = [int(x) for x in labels]
-    # label_dict = dict(zip(label_ints, tuples))
-    holder = np.zeros(label_array.shape[0:3] + (dim,), dtype=np.uint8)
+def label_to_oh(label_array, n_classes):
+    holder = np.zeros(label_array.shape + (n_classes,), dtype=np.uint8)
 
-    for n in range(label_array.shape[0]):
-        if n % 50 == 0:
-            print(n)
-        for i in range(label_array.shape[1]):
-            for j in range(label_array.shape[2]):
-                holder[n, i, j] = np.asarray(dict[tuple(label_array[n, i, j])]).astype(np.uint8)
+    for i in range(n_classes):
+        arr_slice = np.where(label_array == i, 1, 0)
+        holder[:, :, :, i] = arr_slice
 
     holder = holder.astype(np.uint8)
 
