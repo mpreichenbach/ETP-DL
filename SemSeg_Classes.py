@@ -310,30 +310,3 @@ class Unet:
         cnn.compile(optimizer=opt, loss=loss)
 
         return cnn
-
-# ap_imgs = np.zeros((17, 3456, 4608), dtype=np.uint8)
-# ap_onehot = np.zeros((17, 3456, 4608, 6), dtype=np.uint8)
-# fc_imgs = np.zeros((16, 3000, 4000), dtype=np.uint8)
-# fc_onehot = np.zeros((16, 3000, 4000, 6), dtype=np.uint8)
-#
-# for string in folders:
-#     folder_path = 'Data/FC_AP_CC/' + string + '/labels/'
-#     files = os.listdir(folder_path)
-#     for i in range(len(files)):
-#         im = Image.open(folder_path + files[i])
-#         arr = np.asarray(im)
-#         ap_imgs[i] = arr
-#
-#     if string == 'AP':
-#         for n in range(17):
-#             print('Working on image ' + str(n) + '/' + str(17) + '.')
-#             for i in range(3456):
-#                 for j in range(4608):
-#                     ap_onehot[n, i, j] = cc_dict[ap_imgs[n, i, j]]
-#
-#     if string == 'FC':
-#         for n in range(16):
-#             print('Working on image ' + str(n) + '/' + str(16) + '.')
-#             for i in range(3000):
-#                 for j in range(4000):
-#                     fc_onehot[n, i, j] = cc_dict[ap_imgs[n, i, j]]
