@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pandas as pd
 import time
@@ -113,20 +112,20 @@ class Metrics:
 
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
-        input = self.data[0][choices]
+        rgb = self.data[0][choices]
         summary_table = pd.DataFrame(0, index=names, columns=['Accuracy', 'Mean IoU', 'Mean Dice',
                                                               'GPU Inference Time'])
         score_table = pd.DataFrame(0, index=names, columns=iou_headers + dice_headers)
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
-        self.models[0].predict(input)
-        self.models[1].predict(input)
+        self.models[0].predict(rgb)
+        self.models[1].predict(rgb)
 
         for i in range(len(self.models)):
             model = self.models[i]
 
             tic = time.perf_counter()
-            y_pred = vec_to_oh(model.predict(input))
+            y_pred = vec_to_oh(model.predict(rgb))
             toc = time.perf_counter()
             print('Finished predictions for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
             elapsed = toc - tic
@@ -135,7 +134,7 @@ class Metrics:
             iou_scores = iou(y_true, y_pred)
             dice_scores = dice(y_true, y_pred)
 
-            summary_table.loc[model.name, 'Accuracy'] = round(100 * total_acc(y_true, y_pred), 2)
+            summary_table.loc[model.name, 'Accuracy'] = round(100 * np.mean(total_acc(y_true, y_pred)), 2)
             summary_table.loc[model.name, 'Mean IoU'] = round(np.mean(iou_scores), 2)
             summary_table.loc[model.name, 'Mean Dice'] = round(np.mean(dice_scores), 2)
             summary_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
@@ -168,7 +167,7 @@ class Metrics:
             model = self.models[i]
 
             print('Converting predictions to integer labels on {} images.'.format(sample_size))
-            y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])), dim=self.n_classes)
+            y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])))
             table = (100 * confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')).round(2)
             cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
             print('Finished confusion matrix for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
@@ -207,9 +206,9 @@ class Metrics:
             name = self.models[i].name
             self.confusion_tables[i].to_csv(path + name + '.csv')
 
-        if images:
-            im_path = path + 'images'
-            self.view_predictions(display=False, path=im_path)
+        # if images:
+        #     im_path = path + 'images'
+        #     self.view_predictions(display=False, path=im_path)
 
 
 class SemSeg:
