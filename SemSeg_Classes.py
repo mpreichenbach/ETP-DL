@@ -147,9 +147,9 @@ class Metrics:
                 score_table.loc[model.name, iou_headers[j]] = iou_scores[j]
                 score_table.loc[model.name, dice_headers[j]] = dice_scores[j]
 
-            score_table.loc[model.name, 'Weighted Accuracy'] = (100 * weighted_acc).round(2)
-            score_table.loc[model.name, 'Weighted IoU'] = weighted_iou.round(2)
-            score_table.loc[model.name, 'Weighted Dice'] = weighted_dice.round(2)
+            score_table.loc[model.name, 'Weighted Accuracy'] = weighted_acc
+            score_table.loc[model.name, 'Weighted IoU'] = weighted_iou
+            score_table.loc[model.name, 'Weighted Dice'] = weighted_dice
             score_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
 
         self.score_table = score_table
