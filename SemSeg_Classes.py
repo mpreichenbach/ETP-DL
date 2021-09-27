@@ -215,8 +215,8 @@ class Metrics:
         self.score_table.to_csv(os.path.join(path, 'Score_table.csv'))
 
         for i in range(len(self.confusion_tables)):
-            name = self.models[i].name
-            self.confusion_tables[i].to_csv(os.path.join(path, name, '.csv'))
+            name = self.models[i].name + '.csv'
+            self.confusion_tables[i].to_csv(os.path.join(path, name))
 
 
 class SemSeg:
