@@ -201,7 +201,10 @@ class Metrics:
     def make_and_save(self, path):
         """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder.
         Args:
-            path (str): the path with the folder"""
+            path (str): the path to the folder (which should not exist)"""
+
+        os.makedirs(path)
+
         if self.models == []:
             self.load_models()
         if self.data == []:
