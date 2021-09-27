@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import time
@@ -197,8 +198,10 @@ class Metrics:
                    choices=choices,
                    cmap=cmap)
 
-    def make_and_save(self, path, images=True):
-        """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder."""
+    def make_and_save(self, path):
+        """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder.
+        Args:
+            path (str): the path with the folder"""
         if self.models == []:
             self.load_models()
         if self.data == []:
@@ -206,16 +209,11 @@ class Metrics:
 
         self.make_scores()
         self.make_confusion()
-        self.score_table.to_csv(path + 'Score_table.csv')
-        self.summary_table.to_csv(path + 'Summary_table.csv')
+        self.score_table.to_csv(os.path.join(path, 'Score_table.csv'))
 
         for i in range(len(self.confusion_tables)):
             name = self.models[i].name
-            self.confusion_tables[i].to_csv(path + name + '.csv')
-
-        # if images:
-        #     im_path = path + 'images'
-        #     self.view_predictions(display=False, path=im_path)
+            self.confusion_tables[i].to_csv(os.path.join(path, name, '.csv'))
 
 
 class SemSeg:
