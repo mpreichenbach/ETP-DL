@@ -5,9 +5,9 @@ def iou(y_true, y_pred):
     # and returns a vector of IoU scores. See https://en.wikipedia.org/wiki/Jaccard_index for more information.
 
     intersection = np.multiply(y_true, y_pred)
-    i_totals = np.sum(intersection, axis=(0, 1, 2), dtype=np.uint8)
+    i_totals = np.sum(intersection, axis=(0, 1, 2))
     union = y_true + y_pred - intersection
-    u_totals = np.sum(union, axis=(0, 1, 2), dtype=np.uint8)
+    u_totals = np.sum(union, axis=(0, 1, 2))
 
     # the following division will result in nans, so we suppress the warnings since we want to know where nans occur
     with np.errstate(all='ignore'):
@@ -31,13 +31,9 @@ def dice(y_true, y_pred):
 
 def total_acc(y_true, y_pred):
     # Given input tensors of shape (batch_size, height, width, n_classes), this computes the percentage accuracy of the
-    # model's prediction for each class.
+    # model's prediction for each class. Note that y_pred should be one-hot encoded.
 
-    # these two lines set the prediction's max depth value as 1, and every other value as 0
-    comparison = np.equal(np.amax(y_pred, axis=-1, keepdims=True), y_pred)
-    y_pred_oh = np.where(comparison, 1, 0).astype(np.uint8)
-
-    intersection = np.multiply(y_true, y_pred_oh)
+    intersection = np.multiply(y_true, y_pred)
     numerator = np.sum(intersection, axis=(0, 1, 2))
     denominator = np.sum(y_true, axis=(0, 1, 2))
 

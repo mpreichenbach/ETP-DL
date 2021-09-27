@@ -534,7 +534,7 @@ def oh_to_rgb(oh_array, class_df):
     return rgb_array
 
 def oh_to_label(oh_array):
-    output = np.argmax(oh_array, axis=-1, dtype=np.uint8)
+    output = np.argmax(oh_array, axis=-1).astype(np.uint8)
 
     return output
 
