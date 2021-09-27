@@ -25,7 +25,6 @@ class Metrics:
         self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
         self.models = []
         self.resolution = res
-        self.summary_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
 
         if source in ['Potsdam', 'Treadstone']:
@@ -109,12 +108,11 @@ class Metrics:
         names = [x.name for x in self.models]
         iou_headers = ['IoU: ' + class_name for class_name in self.lc_classes]
         dice_headers = ['Dice: ' + class_name for class_name in self.lc_classes]
+        acc_headers = ['Acc: ' + class_name for class_name in  self.lc_classes]
 
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
         rgb = self.data[0][choices]
-        summary_table = pd.DataFrame(0, index=names, columns=['Accuracy', 'Mean IoU', 'Mean Dice',
-                                                              'GPU Inference Time'])
         score_table = pd.DataFrame(0, index=names, columns=iou_headers + dice_headers)
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
@@ -131,19 +129,28 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            iou_scores = iou(y_true, y_pred)
-            dice_scores = dice(y_true, y_pred)
+            class_prop = np.zeros(self.n_classes)
+            n_pixels = sample_size * self.dimensions ** 2
+            for j in range(self.n_classes):
+                class_prop[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
 
-            summary_table.loc[model.name, 'Accuracy'] = round(100 * np.mean(total_acc(y_true, y_pred)), 2)
-            summary_table.loc[model.name, 'Mean IoU'] = round(np.mean(iou_scores), 2)
-            summary_table.loc[model.name, 'Mean Dice'] = round(np.mean(dice_scores), 2)
-            summary_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
+            iou_scores = iou(y_true, y_pred)
+            weighted_iou = np.sum(class_prop * iou_scores)
+            dice_scores = dice(y_true, y_pred)
+            weighted_dice = np.sum(class_prop * dice_scores)
+            acc_scores = total_acc(y_true, y_pred)
+            weighted_acc = np.sum(class_prop * acc_scores)
 
             for j in range(len(iou_scores)):
+                score_table.loc[model.name, acc_headers[j]] = acc_scores[j]
                 score_table.loc[model.name, iou_headers[j]] = iou_scores[j]
                 score_table.loc[model.name, dice_headers[j]] = dice_scores[j]
 
-        self.summary_table = summary_table
+            score_table.loc[model.name, 'Weighted Accuracy'] = (100 * weighted_acc).round(2)
+            score_table.loc[model.name, 'Weighted IoU'] = weighted_iou.round(2)
+            score_table.loc[model.name, 'Weighted Dice'] = weighted_dice.round(2)
+            score_table.loc[model.name, 'GPU Inference Time'] = round(batch_time, 2)
+
         self.score_table = score_table
 
     def make_confusion(self, samples=None):
