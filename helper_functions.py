@@ -589,10 +589,10 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
     pred_list = []
 
     for model in model_list:
-        arr = oh_to_label(vec_to_oh(model.predict(s_choices)), classes).astype(np.uint8)
+        arr = oh_to_label(vec_to_oh(model.predict(s_choices))).astype(np.uint8)
         pred_list.append(arr)
 
-    # this ensures that the colormapping knows the full range of labels for each imshow below.
+    # this ensures that the colormapping knows the full range of labels for each imshow call below.
     norm = Normalize(vmin=0, vmax=classes-1)
 
     fig, axs = plt.subplots(n_tiles, 2 + n_models, constrained_layout=True)
