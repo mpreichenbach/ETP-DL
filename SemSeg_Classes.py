@@ -1,12 +1,14 @@
-import os
-import numpy as np
-import pandas as pd
-import time
-from sklearn.metrics import confusion_matrix
-from metrics import iou, dice, total_acc
+# contains the main classes used for model training and comparison
 from helper_functions import unet_main_block, pt_model, vec_to_oh, oh_to_label, view_tiles
+from matplotlib import pyplot as plt
+from metrics import iou, dice, total_acc
+import numpy as np
+import os
+import pandas as pd
+from sklearn.metrics import confusion_matrix
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
+import time
 
 
 class Metrics:
@@ -205,6 +207,7 @@ class Metrics:
 
         os.makedirs(path)
 
+        # load models and data if not loaded yet
         if self.models == []:
             self.load_models()
         if self.data == []:
@@ -212,12 +215,17 @@ class Metrics:
 
         self.make_scores()
         self.make_confusion()
+
+        # save all the results
         self.score_table.to_csv(os.path.join(path, 'Score_table.csv'))
 
         for i in range(len(self.confusion_tables)):
             name = self.models[i].name + '.csv'
             self.confusion_tables[i].to_csv(os.path.join(path, name))
 
+        self.view_predictions()
+        plt.savefig(os.path.join(path, 'images.png'))
+        plt.close()
 
 class SemSeg:
 
