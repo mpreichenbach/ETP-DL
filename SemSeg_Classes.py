@@ -136,7 +136,7 @@ class Metrics:
 
             n_pixels = sample_size * self.dimensions ** 2
             for j in range(self.n_classes):
-                class_prop[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
+                self.class_prop[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
 
             iou_scores = iou(y_true, y_pred)
             weighted_iou = np.sum(self.class_prop * iou_scores)
