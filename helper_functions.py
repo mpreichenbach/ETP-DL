@@ -549,6 +549,16 @@ def label_to_oh(label_array, n_classes):
 
     return holder
 
+def tile_apply(image, model, overlap=0.0, mode='mean', conc=False):
+    """Tiles an image, model predicts each tile, returns labeled image with original dimensions.
+
+    Args:
+        image (file object): an image-file that can be input into np.asarray,
+        model (Keras model): the model with which to do the predicting,
+        overlap (0.0 <= float < 1.0): the amount of overlap between tiles (note that 1.0 is impossible),
+        mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions,
+        conc (Boolean): whether to concatenate tiles before prediction (this is mostly for testing)."""
+
 def vec_to_oh(array):
     """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
 
