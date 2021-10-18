@@ -31,7 +31,10 @@ def pt_model(backbone, input_shape, n_classes, concatenate=True, do=0.2, opt='Ad
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    input = Input(input_shape, dtype=tf.float32)
+    # testing the following line:
+    input = Input((None, None, 3), dtype=tf.float32)
+
+    # input = Input(input_shape, dtype=tf.float32)
 
     #####
     # Xception
@@ -558,6 +561,12 @@ def tile_apply(image, model, overlap=0.0, mode='mean', conc=False):
         overlap (0.0 <= float < 1.0): the amount of overlap between tiles (note that 1.0 is impossible),
         mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions,
         conc (Boolean): whether to concatenate tiles before prediction (this is mostly for testing)."""
+
+    arr = np.asarray(image)
+    tile_dim = model.layers[0].input_shape[0][1]
+
+
+    holder = np.zeros()
 
 def vec_to_oh(array):
     """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
