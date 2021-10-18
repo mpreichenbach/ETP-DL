@@ -30,7 +30,7 @@ class Metrics:
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
 
-        if source in ['Potsdam', 'Treadstone']:
+        if source in ['Potsdam', 'Treadstone', 'Potsdam+Treadstone']:
             self.n_classes = 6
 
         self.class_prop = np.zeros(self.n_classes)
@@ -202,9 +202,11 @@ class Metrics:
                    cmap=cmap)
 
     def make_and_save(self, path):
-        """Runs make_scores() and make_confusion() with default arguments, and saves to the specified folder.
+        """Runs make_scores(), make_confusion(), and view_predictions() with default arguments, and saves to the
+        specified folder.
+
         Args:
-            path (str): the path to the folder (which should not exist)"""
+            path (str): the path to the folder (which should not exist already)"""
 
         os.makedirs(path)
 
@@ -227,6 +229,7 @@ class Metrics:
         self.view_predictions()
         plt.savefig(os.path.join(path, 'images.png'))
         plt.close()
+
 
 class SemSeg:
 
