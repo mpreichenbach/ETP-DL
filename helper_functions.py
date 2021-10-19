@@ -7,7 +7,7 @@ from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 
 
-def pt_model(backbone, input_shape, n_classes, concatenate=True, do=0.2, opt='Adam', loss='categorical_crossentropy'):
+def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
@@ -541,6 +541,7 @@ def oh_to_label(oh_array):
     return output
 
 def label_to_oh(label_array, n_classes):
+    # is the following line wrong? test this
     holder = np.zeros(label_array.shape + (n_classes,), dtype=np.uint8)
 
     for i in range(n_classes):
