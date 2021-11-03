@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
+import time
 
 
 def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='categorical_crossentropy'):
@@ -395,21 +396,38 @@ def label_to_oh(label_array, n_classes):
 
     return holder
 
-def tile_apply(image, model, overlap=0.0, mode='mean', conc=False):
-    """Tiles an image, model predicts each tile, returns labeled image with original dimensions.
+def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
+    """Tiles an image, model predicts each tile, returns labeled image with original dimensions. Later versions of this
+    functions should have options for overlap, and continuous extension at the edges. For now, make sure that the image
+    dimensions are powers of 2.
 
     Args:
         image (file object): an image-file that can be input into np.asarray,
         model (Keras model): the model with which to do the predicting,
+        tile_dim (0 < int < memory limit): the dimensions of square image tiles for the model to predict,
         overlap (0.0 <= float < 1.0): the amount of overlap between tiles (note that 1.0 is impossible),
-        mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions,
-        conc (Boolean): whether to concatenate tiles before prediction (this is mostly for testing)."""
+        mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions."""
 
     arr = np.asarray(image)
-    tile_dim = model.layers[0].input_shape[0][1]
+    # remove the following line after initial testing on Potsdam
+    arr = arr[0:4096, 0:4096]
+    holder = np.zeros(arr.shape[0:2])
+    nrows = int(arr.shape[0] / tile_dim)
+    ncols = int(arr.shape[1] / tile_dim)
 
+    print("Classifying tiles of shape " + str((tile_dim, tile_dim, 3)) +
+          " from image with dimensions " + str(arr.shape) + ".")
+    tic = time.perf_counter()
+    for i in range(nrows):
+        for j in range(ncols):
+            tile = arr[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))]
+            pred = oh_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
+            holder[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))] = pred
+    toc = time.perf_counter()
+    t_elapsed = round(toc - tic, 4)
+    print("Classification complete; time elapsed: " + str(t_elapsed) + " seconds.")
 
-    holder = np.zeros()
+    return holder
 
 def vec_to_oh(array):
     """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
