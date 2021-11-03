@@ -379,7 +379,7 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='ca
 
         return cnn_pt
 
-def oh_to_label(oh_array):
+def vec_to_label(oh_array):
     output = np.argmax(oh_array, axis=-1).astype(np.uint8)
 
     return output
@@ -421,7 +421,7 @@ def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
     for i in range(nrows):
         for j in range(ncols):
             tile = arr[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))]
-            pred = oh_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
+            pred = vec_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
             holder[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))] = pred
     toc = time.perf_counter()
     t_elapsed = round(toc - tic, 4)
