@@ -69,8 +69,7 @@ class Metrics:
 
         for i in range(n):
             folder = model_list[i] + '_' + str(self.dimensions) + '_' + loss_list[i] + '/'
-            dim_tuple = (self.dimensions, self.dimensions, 3)
-            model = pt_model(model_list[i], dim_tuple, self.n_classes)
+            model = pt_model(model_list[i], self.n_classes)
 
             model.load_weights(path + folder)
             model._name = folder[0:-1]
