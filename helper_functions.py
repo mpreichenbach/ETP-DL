@@ -409,6 +409,8 @@ def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
         mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions."""
 
     arr = np.asarray(image)
+    pix_overlap = int(tile_dim * overlap)
+
     holder = np.zeros(arr.shape[0:2])
     nrows = int(arr.shape[0] / tile_dim)
     ncols = int(arr.shape[1] / tile_dim)
