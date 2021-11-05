@@ -396,7 +396,7 @@ def label_to_oh(label_array, n_classes):
 
     return holder
 
-def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
+def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean'):
     """Tiles an image, model predicts each tile, returns labeled image with original dimensions. Later versions of this
     functions should have options for overlap, and continuous extension at the edges. For now, make sure that the image
     dimensions are powers of 2.
@@ -411,7 +411,11 @@ def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
     arr = np.asarray(image)
     pix_overlap = int(tile_dim * overlap)
 
-    holder = np.zeros(arr.shape[0:2])
+    if to_labels:
+        holder = np.zeros(arr.shape[0:2])
+    else:
+        holder = np.zeros(arr.shape[0:2] + (model.output.shape[-1],))
+
     nrows = int(arr.shape[0] / tile_dim)
     ncols = int(arr.shape[1] / tile_dim)
 
@@ -421,7 +425,12 @@ def tile_apply(image, model, tile_dim, overlap=0.0, mode='mean'):
     for i in range(nrows):
         for j in range(ncols):
             tile = arr[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))]
-            pred = vec_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
+
+            if to_labels:
+                pred = vec_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
+            else:
+                pred = model.predict(tile.reshape((1,) + tile.shape))[0]
+
             holder[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))] = pred
     toc = time.perf_counter()
     t_elapsed = round(toc - tic, 4)
@@ -469,7 +478,7 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
     pred_list = []
 
     for model in model_list:
-        arr = oh_to_label(vec_to_oh(model.predict(s_choices))).astype(np.uint8)
+        arr = vec_to_label(model.predict(s_choices)).astype(np.uint8)
         pred_list.append(arr)
 
     # this ensures that the colormapping knows the full range of labels for each imshow call below.
