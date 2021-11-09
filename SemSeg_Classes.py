@@ -6,6 +6,9 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.metrics import confusion_matrix
+import tensorflow as tf
+# this is for when you want TensorFlow to run on the CPU
+# tf.config.set_visible_devices([], 'GPU')
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D
 import time
@@ -177,7 +180,7 @@ class Metrics:
             model = self.models[i]
 
             print('Converting predictions to integer labels on {} images.'.format(sample_size))
-            y_pred = oh_to_label(vec_to_oh(model.predict(self.data[0][choices])))
+            y_pred = vec_to_label(model.predict(self.data[0][choices]))
             table = (100 * confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')).round(2)
             cm = pd.DataFrame(table, index=self.lc_classes, columns=self.lc_classes)
             print('Finished confusion matrix for model ' + model.name + ' ({}/{}).'.format(i + 1, len(self.models)))
