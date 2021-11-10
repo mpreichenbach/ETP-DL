@@ -7,7 +7,7 @@ import os
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
-# this is for when you want TensorFlow to run on the CPU
+# this is for when you want TensorFlow to run on the CPU (requires a fresh session)
 # tf.config.set_visible_devices([], 'GPU')
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Concatenate, Conv2D, Input, MaxPooling2D, UpSampling2D

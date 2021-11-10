@@ -385,7 +385,6 @@ def vec_to_label(oh_array):
     return output
 
 def label_to_oh(label_array, n_classes):
-    # is the following line wrong? test this
     holder = np.zeros(label_array.shape + (n_classes,), dtype=np.uint8)
 
     for i in range(n_classes):
@@ -437,6 +436,27 @@ def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean')
     print("Classification complete; time elapsed: " + str(t_elapsed) + " seconds.")
 
     return holder
+
+def tvt_split(array, splits=[0.7, 0.2]):
+    """Creates a training/validation/test split of an array.
+
+    Args:
+        array (array-like): the array of shape (batch size, height, width, depth) to be split,
+        splits (list): the proportions to put into training/validation, respectively; the remainder is testing."""
+
+    arr = np.asarray(array)
+    train_size = int(splits[0] * arr.shape[0])
+    val_size = int(splits[1] * arr.shape[0])
+
+    train_choices = np.random.choice(arr.shape[0], train_size, replace=False)
+    training = arr[train_choices]
+
+    holder = np.delete(arr, train_choices, axis=0)
+    val_choices = np.random.choice(holder.shape[0], val_size, replace=False)
+    validation = holder[val_choices]
+    testing = np.delete(holder, val_choices, axis=0)
+
+    return [training, validation, testing]
 
 def vec_to_oh(array):
     """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
