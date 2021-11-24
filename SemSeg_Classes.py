@@ -92,10 +92,10 @@ class Metrics:
             labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '_' + str(self.resolution) + 'cm.npy')
             enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '_' + str(self.resolution) + 'cm.npy')
         elif self.source == 'Treadstone':
-            folder = 'Data/Treadstone/'
-            rgb = np.load(folder + 'RGB_' + str(self.dimensions) + '.npy')
-            labels = np.load(folder + 'Labels_' + str(self.dimensions) + '.npy')
-            enc = np.load(folder + 'Encoded_' + str(self.dimensions) + '.npy')
+            folder = 'Data/Treadstone/Test/'
+            rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
+            labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
+            enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '.npy')
 
         self.data = [rgb, labels, enc]
 
@@ -123,8 +123,8 @@ class Metrics:
         score_table = pd.DataFrame(0, index=names, columns=iou_headers + dice_headers)
 
         # in order to get accurate inferences times, we first need these lines to load the models into memory
-        self.models[0].predict(rgb)
-        self.models[1].predict(rgb)
+        for i in range(len(self.models)):
+            self.models[i].predict(rgb)
 
         for i in range(len(self.models)):
             model = self.models[i]
@@ -205,12 +205,10 @@ class Metrics:
 
     def make_and_save(self, path):
         """Runs make_scores(), make_confusion(), and view_predictions() with default arguments, and saves to the
-        specified folder.
+        specified folder; makes sub-folders for each model in self.models.
 
         Args:
             path (str): the path to the folder (which should not exist already)"""
-
-        os.makedirs(path)
 
         # load models and data if not loaded yet
         if self.models == []:
@@ -222,15 +220,19 @@ class Metrics:
         self.make_confusion()
 
         # save all the results
-        self.score_table.to_csv(os.path.join(path, 'Score_table.csv'))
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-        for i in range(len(self.confusion_tables)):
-            name = self.models[i].name + '.csv'
-            self.confusion_tables[i].to_csv(os.path.join(path, name))
-
-        self.view_predictions()
-        plt.savefig(os.path.join(path, 'images.png'))
-        plt.close()
+        for i in range(len(self.models)):
+            name = self.models[i].name
+            full_path = os.path.join(path, name)
+            if not os.path.exists(full_path):
+                os.makedirs(full_path)
+            self.score_table.to_csv(os.path.join(full_path, 'Score_table.csv'))
+            self.confusion_tables[i].to_csv(os.path.join(full_path, 'Confusion_table.csv'))
+            self.view_predictions()
+            plt.savefig(os.path.join(full_path, 'images.png'))
+            plt.close()
 
 
 class SemSeg:
