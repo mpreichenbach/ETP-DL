@@ -245,7 +245,10 @@ class SemSeg:
             dim (int): member of the list [256, 512]."""
 
         self.dim = dim
-        self.data_path = 'Data/' + source + '/Numpy Arrays/'
+        if source == "Potsdam":
+            self.data_path = 'Data/' + source + '/Numpy Arrays/'
+        else:
+            self.data_path = 'Data/' + source + '/'
         self.class_df = pd.read_csv(self.data_path + 'class_df.csv')
         self.model_list = 'No models have been loaded.'
 
