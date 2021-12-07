@@ -261,17 +261,17 @@ class SemSeg:
 
 
     def load_data(self):
-        rgb_train = np.load(self.data_path + 'Train/RGB_' + str(self.dim) + '.npy')
-        rgb_val = np.load(self.data_path + 'Validation/RGB_' + str(self.dim) + '.npy')
-        rgb_test = np.load(self.data_path + 'Test/RGB_' + str(self.dim) + '.npy')
+        rgb_train = np.load(self.data_path + 'Train/Train_RGB_' + str(self.dim) + '.npy')
+        rgb_val = np.load(self.data_path + 'Validation/Validation_RGB_' + str(self.dim) + '.npy')
+        rgb_test = np.load(self.data_path + 'Test/Test_RGB_' + str(self.dim) + '.npy')
 
-        labels_train = np.load(self.data_path + 'Train/Labels_' + str(self.dim) + '.npy')
-        labels_val = np.load(self.data_path + 'Validation/Labels_' + str(self.dim) + '.npy')
-        labels_test = np.load(self.data_path + 'Test/Labels_' + str(self.dim) + '.npy')
+        labels_train = np.load(self.data_path + 'Train/Train_Labels_' + str(self.dim) + '.npy')
+        labels_val = np.load(self.data_path + 'Validation/Validation_Labels_' + str(self.dim) + '.npy')
+        labels_test = np.load(self.data_path + 'Test/Test_Labels_' + str(self.dim) + '.npy')
 
-        enc_train = np.load(self.data_path + 'Train/Encoded_' + str(self.dim) + '.npy')
-        enc_val = np.load(self.data_path + 'Validation/Encoded_' + str(self.dim) + '.npy')
-        enc_test = np.load(self.data_path + 'Test/Encoded_' + str(self.dim) + '.npy')
+        enc_train = np.load(self.data_path + 'Train/Train_Encoded_' + str(self.dim) + '.npy')
+        enc_val = np.load(self.data_path + 'Validation/Validation_Encoded_' + str(self.dim) + '.npy')
+        enc_test = np.load(self.data_path + 'Test/Test_Encoded_' + str(self.dim) + '.npy')
 
         return [rgb_train, rgb_val, rgb_test, labels_train, labels_val, labels_test, enc_train, enc_val, enc_test]
 
