@@ -1,5 +1,5 @@
 # contains the main classes used for model training and comparison
-from helper_functions import unet_main_block, pt_model, vec_to_oh, vec_to_label, view_tiles
+from helper_functions import unet_main_block, pt_model, vec_to_oh, vec_to_label, view_tiles, reduce_classes
 from matplotlib import pyplot as plt
 from metrics import iou, dice, total_acc
 import numpy as np
@@ -18,25 +18,26 @@ class Metrics:
     """For the loaded model and test data attributes, has methods to compute metrics in nicely presentable formats."""
 
     # attributes
-    def __init__(self, source, dimensions, res=None):
+    def __init__(self, source, dimensions, kept_labels=None, res=None):
         """Args:
             source (str): one of 'Potsdam', 'Treadstone',
             dimensions (int): one of 256 or 512,
+            keep (list): list of classes to keep,
             res (int): one of 10, 50, 100, 200, giving the spacial resolution in cm."""
 
+        self.all_classes = []
+        self.kept_classes = []
         self.confusion_tables = []
         self.data = []
         self.dimensions = dimensions
-        self.lc_classes = ['Impervious Surface', 'Building', 'Low vegetation', 'High vegetation', 'Car', 'Clutter']
+        self.kept_labels = kept_labels
+        self.lc_classes = []
         self.models = []
         self.resolution = res
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
-
-        if source in ['Potsdam', 'Treadstone', 'Potsdam+Treadstone']:
-            self.n_classes = 6
-
-        self.class_prop = np.zeros(self.n_classes)
+        self.n_classes = 0
+        self.class_proportions = np.zeros(self.n_classes)
 
     # methods
     def load_models(self, backbones=None, losses='cc'):
@@ -81,6 +82,13 @@ class Metrics:
     def load_data(self):
         """Loads a test dataset on which to compute metrics. Note that one can also just set the test_data attribute
         directly."""
+
+        if self.source in ["Potsdam", "Treadstone"]:
+            self.all_classes = ["Impervious Surface", "Building", "Low Vegetation", "High Vegetation", "Car", "Clutter"]
+            if self.kept_labels is None:
+                self.kept_labels = np.arange(len(self.all_classes)).tolist()
+
+        # load the correct data
         if self.source == 'Potsdam' and self.resolution is None:
             folder = 'Data/Potsdam/Numpy Arrays/Test/'
             rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
@@ -96,8 +104,25 @@ class Metrics:
             rgb = np.load(folder + 'Test_RGB_' + str(self.dimensions) + '.npy')
             labels = np.load(folder + 'Test_Labels_' + str(self.dimensions) + '.npy')
             enc = np.load(folder + 'Test_Encoded_' + str(self.dimensions) + '.npy')
+        else:
+            print("Cannot load data with this source; perhaps you made a typo?")
+            return
 
-        self.data = [rgb, labels, enc]
+        # removed unwanted classes from the data
+        if self.kept_labels is not None:
+            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
+            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
+        else:
+            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
+            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
+
+        # update the kept_classes list
+        for idx in self.kept_labels:
+            if not self.all_classes[idx - 1] in self.kept_classes:
+                self.kept_classes.append(self.all_classes[idx - 1])
+
+        # update the data
+        self.data = [rgb, labels_reduced, enc_reduced]
 
     def make_scores(self, samples=None):
         """Sets self.score_table as a dataframe with predicted metrics for each model in self.models.

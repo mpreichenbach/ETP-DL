@@ -20,7 +20,10 @@ def reduce_classes(array, type=None, keep=None):
     Args:
         array (ndarray): either a labeled array with classes denoted by 0, 1, 2, etc., or a one-hot encoding;
         type (string): either "labels" or "encoded",
-        keep (list): a list of labels or indices to keep as distinct classes."""
+        keep (list or integer): a list of labels or indices to keep as distinct classes."""
+
+    if isinstance(keep, int):
+        keep = [keep]
 
     if type == "labels":
         out_array = np.zeros(array.shape, dtype=np.uint8)
