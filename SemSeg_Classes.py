@@ -37,7 +37,6 @@ class Metrics:
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
         self.n_classes = 0
-        self.class_proportions = np.zeros(self.n_classes)
 
     # methods
     def load_models(self, backbones=None, losses='cc'):
@@ -161,16 +160,18 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
+            class_proportions = np.zeros(self.n_classes)
             n_pixels = sample_size * self.dimensions ** 2
             for j in range(self.n_classes):
-                self.class_prop[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
+                class_proportions[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
+            print(class_proportions)
 
             iou_scores = iou(y_true, y_pred)
-            weighted_iou = np.sum(self.class_prop * iou_scores)
+            weighted_iou = np.sum(class_proportions * iou_scores)
             dice_scores = dice(y_true, y_pred)
-            weighted_dice = np.sum(self.class_prop * dice_scores)
+            weighted_dice = np.sum(class_proportions * dice_scores)
             acc_scores = total_acc(y_true, y_pred)
-            weighted_acc = np.sum(self.class_prop * acc_scores)
+            weighted_acc = np.sum(class_proportions * acc_scores)
 
             for j in range(len(iou_scores)):
                 score_table.loc[model.name, acc_headers[j]] = acc_scores[j]
