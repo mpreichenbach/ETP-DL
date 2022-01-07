@@ -9,22 +9,62 @@ from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 import time
 
+@tf.function
+def load_image_train(datapoint: dict) -> tuple:
+    """Apply image-augmentation on training inputs.
 
-def parse_image(img_path: str) -> dict:
+    Args:
+        datapoint (dict): a dictionary containing the input image and its corresponding labeled image."""
+
+    rgb = datapoint['rgb']
+    enc = datapoint['enc']
+
+    # perform random horizontal flip
+    if tf.random.uniform((), minval=0, maxval=1) == 1:
+        rgb = tf.image.flip_left_right(rgb)
+        enc = tf.image.flip_left_right(enc)
+
+    # perform random rotation
+    rot = tf.random.uniform((), minval=0, maxval=3)
+    rgb = tf.image.rot90(rgb, k=rot)
+    enc = tf.image.rot90(enc, k=rot)
+
+    # perform random transposition
+    if tf.random.uniform((), minval=0, maxval=1) == 1:
+        rgb = tf.image.transpose(rgb)
+        enc = tf.image.transpose(enc)
+
+    return rgb, enc
+
+@tf.function
+def load_image_test(datapoint: dict) -> tuple:
+    """Loads images from the test set (data augmentation is unnecessary).
+
+    Args:
+        datapoint (dict): a dictionary containing the input image and its corresponding labeled image."""
+
+    rgb = datapoint['rgb']
+    enc = datapoint['enc']
+
+    return rgb, enc
+
+def parse_image(img_path: str, n_classes: int) -> dict:
     """Load an image and its annotation (mask) and returning
     a dictionary.
 
     Args:
         img_path(str): the path to the input image (not the labels)."""
-    image = tf.io.read_file(img_path)
-    image = tf.image.decode_image(image, channels=3)
-    image = tf.image.convert_image_dtype(image, tf.uint8)
+    rgb = tf.io.read_file(img_path)
+    rgb = tf.image.decode_image(rgb, channels=3)
+    rgb = tf.image.convert_image_dtype(rgb, tf.uint8)
 
-    mask_path = tf.strings.regex_replace(img_path, "RGB", "Labels")
-    mask = tf.io.read_file(mask_path)
-    mask = tf.image.decode_png(mask, channels=1)
+    label_path = tf.strings.regex_replace(img_path, "RGB", "Labels")
+    labels = tf.io.read_file(mask_path)
+    labels = tf.image.decode_png(labels, channels=1)
 
-    return {'image': image, 'segmentation_mask': mask}
+    encoded = label_to_oh(labels, n_classes)
+
+    return {'rgb': rgb, 'labels': labels, 'enc': encoded}
 
 
 def numpy2img(array, path, type = "png", progress = 0):
@@ -473,11 +513,14 @@ def vec_to_label(oh_array):
     return output
 
 def label_to_oh(label_array, n_classes):
-    holder = np.zeros(label_array.shape + (n_classes,), dtype=np.uint8)
+    holder = np.zeros(label_array.shape + (1,), dtype=np.uint8)
 
     for i in range(n_classes):
         arr_slice = np.where(label_array == i, 1, 0)
-        holder[:, :, :, i] = arr_slice
+        if i == 1:
+            holder = arr_slice
+        else:
+            holder = np.concatenate(holder, arr_slice, axis = -1)
 
     holder = holder.astype(np.uint8)
 
