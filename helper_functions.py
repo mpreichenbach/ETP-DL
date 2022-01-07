@@ -1,11 +1,43 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
+from PIL import Image
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 import time
+
+
+def numpy2img(array, path, type="png"):
+    """Given an array with dimensions (n_tiles, height, width, depth), saves the individual tiles as images of format
+    'type', in the folder given by path. The file name will be the corresponding n_tiles index.
+
+    Args:
+        array (ndarray): an array with dimensions (n_tiles, height, width, depth),
+        path (string): the path in which to save image files,
+        type (string): the desired file type."""
+
+    if not isinstance(array, 'numpy.ndarray'):
+        print("Argument 'array' must be of class np.ndarray.")
+        return
+    if not isinstance(path, 'str'):
+        print("Argument 'path' must be a string.")
+        return
+    if not isinstance(type, 'str'):
+        print("Argument 'type' must be a string.")
+        return
+
+    if path[-1] != "/":
+        print("Argument 'path' must end with /.")
+        return
+
+    n_images = len(array)
+
+    for i in range(n_images):
+        print("Beginning process to save " + str(i) + " images.")
+        im = Image.fromarray(array[i])
+        im.save(fp = path + str(i) + "." + type)
 
 
 def reduce_classes(array, type=None, keep=None):
@@ -33,6 +65,7 @@ def reduce_classes(array, type=None, keep=None):
             new_val = i + 1
             out_array = np.where(array == val, new_val, out_array)
             out_array = np.where(out_array == -1, 0, out_array)
+
 
     if type == "encoded":
         kept_classes = array[:, :, :, keep]
