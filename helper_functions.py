@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
@@ -9,22 +10,23 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-def numpy2img(array, path, type="png"):
+def numpy2img(array, path, type = "png", progress = 0):
     """Given an array with dimensions (n_tiles, height, width, depth), saves the individual tiles as images of format
     'type', in the folder given by path. The file name will be the corresponding n_tiles index.
 
     Args:
         array (ndarray): an array with dimensions (n_tiles, height, width, depth),
         path (string): the path in which to save image files,
-        type (string): the desired file type."""
+        type (string): the desired file type,
+        progress (int)): gives the number of images to save before printing an update; if 0, no update is printed. """
 
-    if not isinstance(array, 'numpy.ndarray'):
+    if not isinstance(array, np.ndarray):
         print("Argument 'array' must be of class np.ndarray.")
         return
-    if not isinstance(path, 'str'):
+    if not isinstance(path, str):
         print("Argument 'path' must be a string.")
         return
-    if not isinstance(type, 'str'):
+    if not isinstance(type, str):
         print("Argument 'type' must be a string.")
         return
 
@@ -35,9 +37,10 @@ def numpy2img(array, path, type="png"):
     n_images = len(array)
 
     for i in range(n_images):
-        print("Beginning process to save " + str(i) + " images.")
         im = Image.fromarray(array[i])
         im.save(fp = path + str(i) + "." + type)
+        if (progress != 0) & (i % progress == 0):
+            print("Finished saving " + str(i) + "/" + str(n_images) + " images.")
 
 
 def reduce_classes(array, type=None, keep=None):
