@@ -10,6 +10,23 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
+def parse_image(img_path: str) -> dict:
+    """Load an image and its annotation (mask) and returning
+    a dictionary.
+
+    Args:
+        img_path(str): the path to the input image (not the labels)."""
+    image = tf.io.read_file(img_path)
+    image = tf.image.decode_image(image, channels=3)
+    image = tf.image.convert_image_dtype(image, tf.uint8)
+
+    mask_path = tf.strings.regex_replace(img_path, "RGB", "Labels")
+    mask = tf.io.read_file(mask_path)
+    mask = tf.image.decode_png(mask, channels=1)
+
+    return {'image': image, 'segmentation_mask': mask}
+
+
 def numpy2img(array, path, type = "png", progress = 0):
     """Given an array with dimensions (n_tiles, height, width, depth), saves the individual tiles as images of format
     'type', in the folder given by path. The file name will be the corresponding n_tiles index.
