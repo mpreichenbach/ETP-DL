@@ -48,7 +48,7 @@ def load_image_test(datapoint: dict) -> tuple:
 
     return rgb, enc
 
-def parse_image(img_path: str, n_classes: int) -> dict:
+def parse_image(img_path: str) -> dict:
     """Load an image and its annotation (mask) and returning
     a dictionary.
 
@@ -59,10 +59,10 @@ def parse_image(img_path: str, n_classes: int) -> dict:
     rgb = tf.image.convert_image_dtype(rgb, tf.uint8)
 
     label_path = tf.strings.regex_replace(img_path, "RGB", "Labels")
-    labels = tf.io.read_file(mask_path)
+    labels = tf.io.read_file(label_path)
     labels = tf.image.decode_png(labels, channels=1)
 
-    encoded = label_to_oh(labels, n_classes)
+    encoded = label_to_oh(labels)
 
     return {'rgb': rgb, 'labels': labels, 'enc': encoded}
 
@@ -512,15 +512,14 @@ def vec_to_label(oh_array):
 
     return output
 
-def label_to_oh(label_array, n_classes):
-    holder = np.zeros(label_array.shape + (1,), dtype=np.uint8)
-
-    for i in range(n_classes):
+def label_to_oh(label_array):
+    """Converts integer labels to one-hot encodings."""
+    for i in range(6):
         arr_slice = np.where(label_array == i, 1, 0)
-        if i == 1:
+        if i == 0:
             holder = arr_slice
         else:
-            holder = np.concatenate(holder, arr_slice, axis = -1)
+            holder = np.concatenate([holder, arr_slice], axis=-1)
 
     holder = holder.astype(np.uint8)
 
