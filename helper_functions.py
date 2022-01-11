@@ -176,24 +176,18 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='ca
         x = model_pt.output
 
         # upsampling path
-        # note that this path has no feature concatenation from the downsampling path; the Xception architecture doesn't
-        # have obvious spots to do this, but I will continue thinking about it.
         filters = int(model_pt.output.shape[-1])
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        # x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        # x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        # x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        # x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)

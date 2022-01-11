@@ -109,11 +109,8 @@ class Metrics:
 
         # removed unwanted classes from the data
         if self.kept_labels is not None:
-            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
-            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
-        else:
-            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
-            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
+            labels_reduced = reduce_classes(labels, type="labels", keep=self.kept_labels)
+            enc_reduced = reduce_classes(enc, type="encoded", keep=self.kept_labels)
 
         # update the kept_classes list
         for idx in self.kept_labels:
