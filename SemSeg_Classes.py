@@ -136,7 +136,7 @@ class Metrics:
         names = [x.name for x in self.models]
         iou_headers = ['IoU: ' + class_name for class_name in self.lc_classes]
         dice_headers = ['Dice: ' + class_name for class_name in self.lc_classes]
-        acc_headers = ['Acc: ' + class_name for class_name in  self.lc_classes]
+        acc_headers = ['Acc: ' + class_name for class_name in self.lc_classes]
 
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
