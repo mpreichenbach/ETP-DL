@@ -27,7 +27,7 @@ def read_mask(path):
 
 def preprocess(x, y):
     def f(x, y):
-        # are these lines necessary?
+        # this function loads the individual images
         x = x.decode()
         y = y.decode()
 
@@ -35,6 +35,20 @@ def preprocess(x, y):
         y = read_mask(y)
 
         return x, y
+
+    # this performs a random flip of the images; 0 is up-down, 1 is left-right, 2 is neither
+    f_choice = np.random.randint(0, 3)
+    if f_choice == 0:
+        x = np.flip(x, axis=0)
+        y = np.flip(y, axis=0)
+    elif f_choice == 1:
+        x = np.flip(x, axis=1)
+        y = np.flipt(y, axis=1)
+
+    # this performs a random rotation of the images
+    r_choice = np.random.randint(0, 4)
+    x = np.rot90(x, int=r_choice)
+    y = np.rot90(y, int=r_choice)
 
     images, masks = tf.numpy_function(f, [x, y], [tf.float32, tf.float32])
     images.set_shape([256, 256, 3])
