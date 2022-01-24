@@ -37,18 +37,19 @@ def preprocess(x, y):
         return x, y
 
     # this performs a random flip of the images; 0 is up-down, 1 is left-right, 2 is neither
-    f_choice = np.random.randint(0, 3)
-    if f_choice == 0:
-        x = np.flip(x, axis=0)
-        y = np.flip(y, axis=0)
-    elif f_choice == 1:
-        x = np.flip(x, axis=1)
-        y = np.flipt(y, axis=1)
+    f_int = tf.random.uniform([1], minval=0, maxval=2, dtype=tf.int32)
+    if f_int == 1:
+        x = tf.image.flip_left_right(x)
+        y = tf.image.flip_left_right(y)
 
     # this performs a random rotation of the images
-    r_choice = np.random.randint(0, 4)
-    x = np.rot90(x, int=r_choice)
-    y = np.rot90(y, int=r_choice)
+    r_int = tf.random.uniform([1], minval=0, maxval=4, dtype=tf.int32)
+    x = tf.image.rot90(x, k=r_int)
+    y = tf.image.rot90(y, k=r_int)
+
+    # this performs a random contrast adjustment on the RGB image
+    # c_int = tf.random.uniform([1])
+    # x = tf.image.adjust_contrast(x, contrast_factor=c_int)
 
     images, masks = tf.numpy_function(f, [x, y], [tf.float32, tf.float32])
     images.set_shape([256, 256, 3])
