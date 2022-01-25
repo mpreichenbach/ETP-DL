@@ -9,63 +9,10 @@ from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 import time
 
-@tf.function
-def load_image_train(datapoint: dict) -> tuple:
-    """Apply image-augmentation on training inputs.
 
-    Args:
-        datapoint (dict): a dictionary containing the input image and its corresponding labeled image."""
-
-    rgb = datapoint['rgb']
-    enc = datapoint['enc']
-
-    # perform random horizontal flip
-    if tf.random.uniform((), minval=0, maxval=1) == 1:
-        rgb = tf.image.flip_left_right(rgb)
-        enc = tf.image.flip_left_right(enc)
-
-    # perform random rotation
-    rot = tf.random.uniform((), minval=0, maxval=3)
-    rgb = tf.image.rot90(rgb, k=rot)
-    enc = tf.image.rot90(enc, k=rot)
-
-    # perform random transposition
-    if tf.random.uniform((), minval=0, maxval=1) == 1:
-        rgb = tf.image.transpose(rgb)
-        enc = tf.image.transpose(enc)
-
-    return rgb, enc
-
-@tf.function
-def load_image_test(datapoint: dict) -> tuple:
-    """Loads images from the test set (data augmentation is unnecessary).
-
-    Args:
-        datapoint (dict): a dictionary containing the input image and its corresponding labeled image."""
-
-    rgb = datapoint['rgb']
-    enc = datapoint['enc']
-
-    return rgb, enc
-
-def parse_image(img_path: str) -> dict:
-    """Load an image and its annotation (mask) and returning
-    a dictionary.
-
-    Args:
-        img_path(str): the path to the input image (not the labels)."""
-    rgb = tf.io.read_file(img_path)
-    rgb = tf.image.decode_image(rgb, channels=3)
-    rgb = tf.image.convert_image_dtype(rgb, tf.uint8)
-
-    label_path = tf.strings.regex_replace(img_path, "RGB", "Labels")
-    labels = tf.io.read_file(label_path)
-    labels = tf.image.decode_png(labels, channels=1)
-
-    encoded = label_to_oh(labels)
-
-    return {'rgb': rgb, 'labels': labels, 'enc': encoded}
-
+def rotate(x):
+    """Performs a random rotation on the input image."""
+    return np.rot90(x, np.random.randint(0, 4))
 
 def numpy2img(array, path, type = "png", progress = 0):
     """Given an array with dimensions (n_tiles, height, width, depth), saves the individual tiles as images of format
@@ -506,18 +453,15 @@ def vec_to_label(oh_array):
 
     return output
 
-def label_to_oh(label_array):
-    """Converts integer labels to one-hot encodings."""
-    for i in range(6):
-        arr_slice = np.where(label_array == i, 1, 0)
-        if i == 0:
-            holder = arr_slice
-        else:
-            holder = np.concatenate([holder, arr_slice], axis=-1)
+def label_to_oh(label_array, classes):
+    """Converts integer labels in an image to one-hot encodings."""
 
-    holder = holder.astype(np.uint8)
+    dim = label_array.shape[0]
+    enc = np.zeros((dim, dim, classes), dtype=np.uint8)
+    for i in range(classes):
+        enc[:, :, i][label_array == i] = 1
 
-    return holder
+    return enc
 
 def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean'):
     """Tiles an image, model predicts each tile, returns labeled image with original dimensions. Later versions of this
