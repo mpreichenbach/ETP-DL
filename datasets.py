@@ -34,18 +34,18 @@ def dataset_gen(dim, classes, batch_size, image_dir, mask_dir, rot8=True, v_flip
 
     image_generator = image_datagen.flow_from_directory(image_dir,
                                                         target_size=(dim, dim),
+                                                        color_mode='rgb',
                                                         class_mode=None,
                                                         batch_size=batch_size,
                                                         shuffle=True,
-                                                        save_to_dir='D:/Test/images/',
                                                         seed=seed)
 
     mask_generator = mask_datagen.flow_from_directory(mask_dir,
                                                       target_size=(dim, dim),
+                                                      color_mode='grayscale',
                                                       class_mode=None,
                                                       batch_size=batch_size,
                                                       shuffle=True,
-                                                      save_to_dir='D:/Test/masks/',
                                                       seed=seed)
 
     return zip(image_generator, mask_generator)
