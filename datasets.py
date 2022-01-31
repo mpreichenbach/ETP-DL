@@ -1,8 +1,8 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from helper_functions import rotate, label_to_oh
+from helper_functions import rotate
 
 
-def dataset_gen(dim, classes, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
+def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
     """Creates a pair of iterators which will transform the images/masks in identical ways.
 
     Args:
@@ -16,10 +16,9 @@ def dataset_gen(dim, classes, batch_size, image_dir, mask_dir, rot8=True, v_flip
         h_flip (bool): whether to perform a flip over the vertical axis (unnecessary when rotation, v_flip=True,
         seed (int): the random seed to set for transformations."""
 
-    # wraps any preprocessing functions, and performs the one-hot encoding
+    # add preprocessing steps here
     def preprocess(x):
         x = rotate(x) if rot8 else x
-        x = label_to_oh(x, classes)
 
         return x
 
@@ -37,7 +36,8 @@ def dataset_gen(dim, classes, batch_size, image_dir, mask_dir, rot8=True, v_flip
                                                         color_mode='rgb',
                                                         class_mode=None,
                                                         batch_size=batch_size,
-                                                        shuffle=True,
+                                                        # save_to_dir="Data/images/",
+                                                        shuffle=False,
                                                         seed=seed)
 
     mask_generator = mask_datagen.flow_from_directory(mask_dir,
@@ -45,10 +45,10 @@ def dataset_gen(dim, classes, batch_size, image_dir, mask_dir, rot8=True, v_flip
                                                       color_mode='grayscale',
                                                       class_mode=None,
                                                       batch_size=batch_size,
-                                                      shuffle=True,
+                                                      # save_to_dir="Data/masks/",
+                                                      shuffle=False,
                                                       seed=seed)
 
-    return zip(image_generator, mask_generator)
+    zip_gen = zip(image_generator, mask_generator)
 
-
-
+    return zip_gen

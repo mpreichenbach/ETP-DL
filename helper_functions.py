@@ -1,4 +1,3 @@
-import numpy
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
@@ -455,7 +454,6 @@ def vec_to_label(oh_array):
 
 def label_to_oh(label_array, classes):
     """Converts integer labels in an image to one-hot encodings."""
-
     dim = label_array.shape[0]
     enc = np.zeros((dim, dim, classes), dtype=np.uint8)
     for i in range(classes):
