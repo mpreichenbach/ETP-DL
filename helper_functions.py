@@ -46,38 +46,31 @@ def numpy2img(array, path, type = "png", progress = 0):
             print("Finished saving " + str(i) + "/" + str(n_images) + " images.")
 
 
-def reduce_classes(array, type=None, keep=None):
-    """Takes labeled imagery (with characters for each class) or one-hot encodings and returns imagery with fewer
-    classes. For labeled imagery, "0" will denote everything not kept, and other numbers will denote the labels kept.
-    Their order will be the same as the order in the original set, but the labels themselves may change. For one-hot
-    encodings, classes which are not kept are denoted by the depth vector (1, 0, ..., 0), and kept classes will have
-    a 1 in the position given by the corresponding label in the mask imagery. That is, if one inputs labeled imagery and
-    a certain class has label "2" in the output, that class will correspond to the vector (0, 1, 0, ..., 0) when one
-    inputs one-hot encoded imagery.
+def reduce_classes(array, keep_labels=None):
+    """Takes array of labels and keeps only the classes given in keep_labels. If keep_labels=[a, b], then output will
+    have values [0, 1, 2], where 1 corresponds to a, 2 corresponds to b, and 0 corresponds to all values in array which
+    are neither a nor b.
 
     Args:
-        array (ndarray): either a labeled array with classes denoted by 0, 1, 2, etc., or a one-hot encoding;
-        type (string): either "labels" or "encoded",
-        keep (list or integer): a list of labels or indices to keep as distinct classes."""
+        array (ndarray): an array with shape (n_classes, height, width), and integer classes,
+        keep_labels (list or integer): either a single integer, or a list of the labels to keep."""
 
-    if isinstance(keep, int):
-        keep = [keep]
+    if isinstance(keep_labels, int):
+        vals = [keep_labels]
+    elif isinstance(keep_labels, list):
+        vals = keep_labels
 
-    if type == "labels":
+    # if input array is integer labels (masks)
+    if len(array.shape) != 3:
+        print("Input array must have shape (n_images, dim, dim).")
+        return
+    else:
         out_array = np.zeros(array.shape, dtype=np.uint8)
-
-        for i in range(len(keep)):
-            val = keep[i]
-            new_val = i + 1
+        new_vals = (np.arange(len(vals)) + 1).tolist()
+        for i in range(len(vals)):
+            val = vals[i]
+            new_val = new_vals[i]
             out_array = np.where(array == val, new_val, out_array)
-            out_array = np.where(out_array == -1, 0, out_array)
-
-
-    if type == "encoded":
-        kept_classes = array[:, :, :, keep]
-        rmvd_classes = np.sum(np.delete(array, keep, axis=-1), axis=-1)
-        rmvd_classes = rmvd_classes.reshape(rmvd_classes.shape + (1,))
-        out_array = np.concatenate([rmvd_classes, kept_classes], axis=-1)
 
     return out_array.astype(np.uint8)
 
