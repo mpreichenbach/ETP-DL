@@ -1,8 +1,11 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow import one_hot
 from helper_functions import rotate
 
 
-def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
+def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False,
+                oh_encode=False, n_labels=None, seed=1):
+
     """Creates a pair of iterators which will transform the images/masks in identical ways.
 
     Args:
@@ -19,6 +22,7 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
     # add preprocessing steps here
     def preprocess(x):
         x = rotate(x) if rot8 else x
+        x = one_hot(x, n_labels) if oh_encode else x
 
         return x
 
@@ -37,7 +41,7 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
                                                         class_mode=None,
                                                         batch_size=batch_size,
                                                         # save_to_dir="Data/images/",
-                                                        shuffle=False,
+                                                        shuffle=True,
                                                         seed=seed)
 
     mask_generator = mask_datagen.flow_from_directory(mask_dir,
@@ -46,7 +50,7 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
                                                       class_mode=None,
                                                       batch_size=batch_size,
                                                       # save_to_dir="Data/masks/",
-                                                      shuffle=False,
+                                                      shuffle=True,
                                                       seed=seed)
 
     zip_gen = zip(image_generator, mask_generator)
