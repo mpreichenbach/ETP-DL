@@ -59,12 +59,13 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
     for x, y in zip_gen:
         yield x, y
 
-    # return zip_gen
 
-# this is a custom generator given at https://github.com/keras-team/keras/issues/3059
-def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, one_hot_enc=True):
+# this is a custom generator given at https://github.com/keras-team/keras/issues/3059, in case you need more control
+# over preprocessing functions. For example, ImageDataGenerators don't allow one-hot encoding in preprocessing.
+
+def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, rescale=1):
     list_images = os.listdir(image_dir)
-    # np.random.shuffle(list_images)
+    np.random.shuffle(list_images)
     ids_train_split = range(len(list_images))
     while True:
         for start in range(0, len(ids_train_split), batch_size):
@@ -85,13 +86,11 @@ def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, one_
                     img = np.flip(img, axis=0)
                     mask = np.flip(mask, axis=0)
 
-                if one_hot_enc:
-                    mask = label_to_oh(mask, 6)
-
                 x_batch.append(img)
                 y_batch.append(mask)
 
-            x_batch = np.array(x_batch, np.float32) / 255.
+            # you likely don't need a rescale factor if you're using preprocessing layers in a model
+            x_batch = np.array(x_batch, np.float32) * rescale
             y_batch = np.array(y_batch, np.float32)
 
             yield x_batch, y_batch
