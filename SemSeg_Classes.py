@@ -37,6 +37,7 @@ class Metrics:
         self.score_table = pd.DataFrame(0, index=[], columns=[])
         self.source = source
         self.n_classes = 0
+        self.class_proportions = np.zeros(self.n_classes)
 
     # methods
     def load_models(self, backbones=None, losses='cc'):
@@ -109,8 +110,11 @@ class Metrics:
 
         # removed unwanted classes from the data
         if self.kept_labels is not None:
-            labels_reduced = reduce_classes(labels, type="labels", keep=self.kept_labels)
-            enc_reduced = reduce_classes(enc, type="encoded", keep=self.kept_labels)
+            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
+            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
+        else:
+            labels_reduced = reduce_classes(labels, type="labels", keep = self.kept_labels)
+            enc_reduced = reduce_classes(enc, type="encoded", keep = self.kept_labels)
 
         # update the kept_classes list
         for idx in self.kept_labels:
@@ -136,7 +140,7 @@ class Metrics:
         names = [x.name for x in self.models]
         iou_headers = ['IoU: ' + class_name for class_name in self.lc_classes]
         dice_headers = ['Dice: ' + class_name for class_name in self.lc_classes]
-        acc_headers = ['Acc: ' + class_name for class_name in self.lc_classes]
+        acc_headers = ['Acc: ' + class_name for class_name in  self.lc_classes]
 
         choices = np.random.choice(len(self.data[0]), size=sample_size, replace=False)
         y_true = self.data[2][choices]
@@ -157,18 +161,16 @@ class Metrics:
             elapsed = toc - tic
             batch_time = round(100 * elapsed / len(y_pred), 2)
 
-            class_proportions = np.zeros(self.n_classes)
             n_pixels = sample_size * self.dimensions ** 2
             for j in range(self.n_classes):
-                class_proportions[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
-            print(class_proportions)
+                self.class_prop[j] = np.sum(y_pred[:, :, :, j]) / n_pixels
 
             iou_scores = iou(y_true, y_pred)
-            weighted_iou = np.sum(class_proportions * iou_scores)
+            weighted_iou = np.sum(self.class_prop * iou_scores)
             dice_scores = dice(y_true, y_pred)
-            weighted_dice = np.sum(class_proportions * dice_scores)
+            weighted_dice = np.sum(self.class_prop * dice_scores)
             acc_scores = total_acc(y_true, y_pred)
-            weighted_acc = np.sum(class_proportions * acc_scores)
+            weighted_acc = np.sum(self.class_prop * acc_scores)
 
             for j in range(len(iou_scores)):
                 score_table.loc[model.name, acc_headers[j]] = acc_scores[j]

@@ -100,7 +100,7 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='sp
        loss (str): the loss function to use when compiling the model."""
 
     # testing the following line:
-    input = Input((None, None, 3), dtype=tf.float32)
+    input = Input(shape=(None, None, 3), dtype=tf.float32)
 
     # input = Input(input_shape, dtype=tf.float32)
 
