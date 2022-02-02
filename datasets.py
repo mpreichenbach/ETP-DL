@@ -26,8 +26,9 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
 
         return x
 
-    image_datagen = ImageDataGenerator(rescale=1/255.0,
-                                       horizontal_flip=h_flip,
+    image_datagen = ImageDataGenerator(horizontal_flip=h_flip,
+                                       # if you use preprocessing layers in a model, you likely don't need to rescale
+                                       # rescale=1/255.0,
                                        vertical_flip=v_flip,
                                        preprocessing_function=preprocess)
 
@@ -55,12 +56,15 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
 
     zip_gen = zip(image_generator, mask_generator)
 
-    return zip_gen
+    for x, y in zip_gen:
+        yield x, y
+
+    # return zip_gen
 
 # this is a custom generator given at https://github.com/keras-team/keras/issues/3059
 def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, one_hot_enc=True):
     list_images = os.listdir(image_dir)
-    np.random.shuffle(list_images)
+    # np.random.shuffle(list_images)
     ids_train_split = range(len(list_images))
     while True:
         for start in range(0, len(ids_train_split), batch_size):
