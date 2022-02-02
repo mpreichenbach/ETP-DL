@@ -1,6 +1,8 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow import one_hot
-from helper_functions import rotate
+from helper_functions import rotate, label_to_oh
+import os
+import numpy as np
+import cv2
 
 
 def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
@@ -54,3 +56,38 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
     zip_gen = zip(image_generator, mask_generator)
 
     return zip_gen
+
+# this is a custom generator given at https://github.com/keras-team/keras/issues/3059
+def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, one_hot_enc=True):
+    list_images = os.listdir(image_dir)
+    np.random.shuffle(list_images)
+    ids_train_split = range(len(list_images))
+    while True:
+        for start in range(0, len(ids_train_split), batch_size):
+            x_batch = []
+            y_batch = []
+            end = min(start + batch_size, len(ids_train_split))
+            ids_train_batch = ids_train_split[start:end]
+            for id in ids_train_batch:
+                img = cv2.imread(os.path.join(image_dir, list_images[id]), cv2.IMREAD_COLOR)
+                mask = cv2.imread(os.path.join(mask_dir, list_images[id]), cv2.IMREAD_GRAYSCALE)
+
+                if rot:
+                    k_rot = np.random.randint(0, 4)
+                    img = np.rot90(img, k=k_rot)
+                    mask = np.rot90(mask, k=k_rot)
+
+                if v_flip and np.random.randint(0, 2) == 1:
+                    img = np.flip(img, axis=0)
+                    mask = np.flip(mask, axis=0)
+
+                if one_hot_enc:
+                    mask = label_to_oh(mask, 6)
+
+                x_batch.append(img)
+                y_batch.append(mask)
+
+            x_batch = np.array(x_batch, np.float32) / 255.
+            y_batch = np.array(y_batch, np.float32)
+
+            yield x_batch, y_batch

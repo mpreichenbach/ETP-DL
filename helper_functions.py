@@ -3,9 +3,10 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
 from PIL import Image
 import tensorflow as tf
+from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
-from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
+from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, UpSampling2D
 import time
 
 
@@ -205,10 +206,10 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='sp
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+        output = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
         # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
+        cnn_pt = Model(input, output)
         cnn_pt.compile(optimizer=opt, loss=loss)
 
         return cnn_pt
@@ -451,7 +452,7 @@ def label_to_oh(label_array, classes):
     enc = np.zeros(label_array.shape + (classes,), dtype=np.uint8)
 
     for i in range(classes):
-        enc[:, :, :, i][label_array == i] = 1
+        enc[:, :, i][label_array == i] = 1
 
     return enc
 
