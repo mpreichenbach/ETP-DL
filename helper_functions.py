@@ -53,7 +53,7 @@ def reduce_classes(array, keep_labels=None):
     are neither a nor b.
 
     Args:
-        array (ndarray): an array with shape (n_classes, height, width), and integer classes,
+        array (ndarray): an array with shape (n_images, height, width), and integer classes,
         keep_labels (list or integer): either a single integer, or a list of the labels to keep."""
 
     if isinstance(keep_labels, int):
