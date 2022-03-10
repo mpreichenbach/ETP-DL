@@ -1,8 +1,9 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from helper_functions import rotate, label_to_oh
 import os
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2,40).__str__()
+import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS
 import numpy as np
-import cv2
 
 
 def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
