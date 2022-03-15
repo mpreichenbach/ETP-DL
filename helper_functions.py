@@ -10,6 +10,17 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
+def dice_score(mask, pred):
+    """See https://en.wikipedia.org/wiki/Jaccard_index; we follow the notation of the first section."""
+
+    intersection = np.multiply(mask, pred)
+    union = mask + pred - intersection
+
+    iou = np.sum(intersection) / np.sum(union)
+
+    return iou
+
+
 def rotate(x):
     """Performs a random rotation on the input image."""
     return np.rot90(x, np.random.randint(0, 4))
