@@ -50,7 +50,9 @@ def label_acc(mask, pred, label):
     mask_holder = np.where(mask == label, 1, 0)
     pred_holder = np.where(pred == label, 1, 0)
 
-    acc = np.sum(np.multiply(mask_holder, pred_holder)) / (pred.shape[0] ** 2)
+    acc = np.sum(np.multiply(mask_holder, pred_holder)) / np.sum(mask_holder)
+
+    return acc
 
 def rotate(x):
     """Performs a random rotation on the input image."""
