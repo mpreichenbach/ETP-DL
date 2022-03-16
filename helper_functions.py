@@ -10,8 +10,11 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-def dice_score(mask, pred):
+def iou_score(mask, pred):
     """See https://en.wikipedia.org/wiki/Jaccard_index; we follow the notation of the first section."""
+
+    if (mask.shape != pred.shape):
+        raise Exception("Input arrays have different shapes.")
 
     intersection = np.multiply(mask, pred)
     union = mask + pred - intersection
@@ -20,6 +23,34 @@ def dice_score(mask, pred):
 
     return iou
 
+def total_acc(mask, pred):
+    """Accuracy over all pixels."""
+
+    if (mask.shape != pred.shape):
+        raise Exception("Input arrays have different shapes.")
+
+    acc = np.sum(np.where(mask == pred, 1, 0)) / (mask.shape[0] ** 2)
+
+    return acc
+
+def label_acc(mask, pred, label):
+    """Accuracy on only the given label."""
+
+    mask_labels = np.unique(mask).tolist()
+    pred_labels = np.unique(pred).tolist()
+
+    all_labels = set(mask_labels + pred_labels)
+
+    if (label not in all_labels):
+        raise Exception("Label " + str(label) + " is not in at least one of the input arrays.")
+
+    if (mask.shape != pred.shape):
+        raise Exception("Input arrays have different shapes.")
+
+    mask_holder = np.where(mask == label, 1, 0)
+    pred_holder = np.where(pred == label, 1, 0)
+
+    acc = np.sum(np.multiply(mask_holder, pred_holder)) / (pred.shape[0] ** 2)
 
 def rotate(x):
     """Performs a random rotation on the input image."""
