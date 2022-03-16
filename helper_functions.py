@@ -467,7 +467,7 @@ def label_to_oh(label_array, classes):
 
     return enc
 
-def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean'):
+def tile_apply(image, model, tile_dim, output_type=np.uint8):
     """Tiles an image, model predicts each tile, returns labeled image with original dimensions. Later versions of this
     functions should have options for overlap, and continuous extension at the edges. For now, make sure that the image
     dimensions are powers of 2.
@@ -475,17 +475,12 @@ def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean')
     Args:
         image (file object): an image-file that can be input into np.asarray,
         model (Keras model): the model with which to do the predicting,
-        tile_dim (0 < int < memory limit): the dimensions of square image tiles for the model to predict,
-        overlap (0.0 <= float < 1.0): the amount of overlap between tiles (note that 1.0 is impossible),
-        mode (string): one of 'mean', 'max'; the method of resolving the labels in overlapping regions."""
+        tile_dim (0 < large power of 2 < memory limit): the dimensions of square image tiles for the model to predict,
+        output_type (numpy data type): the data type for the output array."""
 
     arr = np.asarray(image)
-    pix_overlap = int(tile_dim * overlap)
 
-    if to_labels:
-        holder = np.zeros(arr.shape[0:2])
-    else:
-        holder = np.zeros(arr.shape[0:2] + (model.output.shape[-1],))
+    holder = np.zeros(arr.shape[0:2] + (model.output.shape[-1],))
 
     nrows = int(arr.shape[0] / tile_dim)
     ncols = int(arr.shape[1] / tile_dim)
@@ -496,16 +491,14 @@ def tile_apply(image, model, tile_dim, to_labels=True, overlap=0.0, mode='mean')
     for i in range(nrows):
         for j in range(ncols):
             tile = arr[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))]
-
-            if to_labels:
-                pred = vec_to_label(model.predict(tile.reshape((1,) + tile.shape)))[0]
-            else:
-                pred = model.predict(tile.reshape((1,) + tile.shape))[0]
+            pred = model.predict(tile.reshape((1,) + tile.shape))[0]
 
             holder[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))] = pred
     toc = time.perf_counter()
     t_elapsed = round(toc - tic, 4)
     print("Classification complete; time elapsed: " + str(t_elapsed) + " seconds.")
+
+    holder = holder.astype(output_type)
 
     return holder
 
