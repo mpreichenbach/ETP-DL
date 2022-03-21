@@ -9,6 +9,22 @@ from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, UpSampling2D
 import time
 
+def iou_loss(mask, pred):
+    """Computes the iou_loss for binary input tensors.
+
+    Args:
+        mask (numpy array): the array of true labels (should be one-hot encoded),
+        pred (numpy array): the array of predicted labels (one-hot encoded)."""
+
+    # convert probability vector to label
+    pred = K.argmax(pred, axis=-1)
+
+    intersection = K.prod(mask, pred)
+    union = mask + pred - intersection
+
+    iou = intersection / union
+
+    return 1 - iou
 
 def iou_score(mask, pred):
     """See https://en.wikipedia.org/wiki/Jaccard_index; we follow the notation of the first section."""
