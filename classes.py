@@ -1,13 +1,24 @@
-import numpy as np
 from helper_functions import pt_model
 from datasets import dataset_gen
+from os import listdir
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
 class SemSeg():
     def __init__(self):
+        # model attributes
         self.model = None
         self.weight_path = None
+
+        # data attributes
         self.training_data = None
+        self.training_path = None
+        self.n_training_examples = 0
         self.validation_data = None
+        self.validation_path = None
+        self.n_validation_examples = 0
+        self.data_batch_size = 0
+        self.image_dimension = 512
+
 
     def initialize_weights(self, backbone="VGG19", n_classes=2, concatenate=True, dropout=0.2, optimizer='Adam',
                            loss='sparse_categorical_crossentropy'):
@@ -44,9 +55,67 @@ class SemSeg():
             val_path (str): the path to the validation data, should have 'rgb' and 'masks' subfolders;
             batch_size (int > 0): the size of the batches to generate."""
 
+        self.training_path = train_path
+        self.validation_path = val_path
+        self.image_dimension = 512
+        self.data_batch_size = 8
+
         self.training_data = dataset_gen(dim=image_dim,
                                          batch_size=batch_size,
-                                         rgb_path = train_path + "rgb/",
-                                         )
+                                         rgb_path=train_path + "rgb/",
+                                         mask_path=train_path + "masks/")
 
-    def train(self):
+        if len(listdir(train_path + "rgb/")) == len(listdir(train_path + "masks/")):
+            self.n_training_examples = len(listdir(train_path + "rgb/"))
+        else:
+            raise Exception("The number of RGB images does not match the number of Mask images in the training data.")
+
+        if val_path is not None:
+            self.validation_data = dataset_gen(dim=image_dim,
+                                               batch_size=batch_size,
+                                               rgb_path=val_path + "rgb/",
+                                               mask_path=val_path + "masks/")
+
+            if len(listdir(val_path + "rgb/")) == len(listdir(val_path + "masks/")):
+                self.n_validation_examples = len(listdir(val_path + "rgb/"))
+            else:
+                raise Exception("The number of RGB images does not match the number of Mask images in the validation "
+                                "data.")
+
+    def train_model(self, epochs, save_path=None, monitor='val_loss', lr_factor=0.2, lr_patience=50,
+                    my_callbacks=[], verbose=1):
+        """Fits the model with options for weight-saving, learning rate reduction, csv-logging, and other callbacks.
+            Args:
+                epochs (int): the number of epochs to train the model for;
+                save_path (str): the directory in which to save weights of the best model (based on val_loss);
+                lr_monitor (str): one of 'val_loss' or 'loss';
+                lr_factor (0 < float < 1): the factor by which to reduce the learning rate;
+                lr_patience (int): the number of epochs to elapse before reducing the learning rate;
+                verbose (0, 1, 2): the level of verbosity for the model.fit() method."""
+
+        if monitor == 'val_loss' and self.validation_data is None:
+            raise Exception("Either load validation_data, or change lr_monitor to 'loss'.")
+
+        # instantiate the callbacks for the model.fit() method
+        if save_path is not None:
+            csv_callback = CSVLogger(save_path + "training_log.csv", append=True)
+            my_callbacks.append(csv_callback)
+
+            saving_callback = ModelCheckpoint(filepath=save_path, monitor=monitor, save_best_only=True,
+                                            save_weights_only=True)
+            my_callbacks.append(saving_callback)
+
+        if monitor is not None and lr_factor is not None and lr_patience is not None:
+            lr_callback = ReduceLROnPlateau(monitor=monitor, factor=lr_factor, patience=lr_patience)
+            my_callbacks.append(lr_callback)
+
+        # calculate the number of steps_per_epoch to exhaust the training/validation generators
+        steps_per_epoch = int(self.n_training_examples / self.data_batch_size) + 1
+        validation_steps = int(self.n_validation_examples / self.data_batch_size) + 1
+
+        self.model.fit(self.training_data,
+                       steps_per_epoch=steps_per_epoch,
+                       validation_data=self.validation_data,
+                       validation_steps=validation_steps,
+                       callbacks=my_callbacks,
+                       verbose=verbose)
