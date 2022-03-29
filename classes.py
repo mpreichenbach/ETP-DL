@@ -114,6 +114,7 @@ class SemSeg():
         validation_steps = int(self.n_validation_examples / self.data_batch_size) + 1
 
         self.model.fit(self.training_data,
+                       epochs=epochs,
                        steps_per_epoch=steps_per_epoch,
                        validation_data=self.validation_data,
                        validation_steps=validation_steps,
