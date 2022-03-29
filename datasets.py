@@ -6,7 +6,7 @@ import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS
 import numpy as np
 
 
-def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_flip=False, seed=1):
+def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, seed=1):
 
     """Creates a pair of iterators which will transform the images/masks in identical ways.
 
@@ -37,7 +37,7 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
                                       vertical_flip=v_flip,
                                       preprocessing_function=preprocess)
 
-    image_generator = image_datagen.flow_from_directory(image_dir,
+    image_generator = image_datagen.flow_from_directory(rgb_path,
                                                         target_size=(dim, dim),
                                                         color_mode='rgb',
                                                         class_mode=None,
@@ -46,7 +46,7 @@ def dataset_gen(dim, batch_size, image_dir, mask_dir, rot8=True, v_flip=True, h_
                                                         shuffle=True,
                                                         seed=seed)
 
-    mask_generator = mask_datagen.flow_from_directory(mask_dir,
+    mask_generator = mask_datagen.flow_from_directory(mask_path,
                                                       target_size=(dim, dim),
                                                       color_mode='grayscale',
                                                       class_mode=None,
