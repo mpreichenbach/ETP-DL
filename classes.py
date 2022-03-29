@@ -30,6 +30,7 @@ class SemSeg():
         self.model = pt_model(backbone=backbone,
                               n_classes=n_classes,
                               concatenate=concatenate,
+                              do=dropout,
                               opt=optimizer,
                               loss=loss)
 
