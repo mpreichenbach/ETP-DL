@@ -509,10 +509,15 @@ def vec_to_label(oh_array):
 def label_to_oh(label_array, classes):
     """Converts integer labels with shape (n_images, height, width) to one-hot encodings."""
 
+    initial_dim = len(label_array.shape)
+
     enc = np.zeros(label_array.shape + (classes,), dtype=np.uint8)
 
     for i in range(classes):
-        enc[:, :, i][label_array == i] = 1
+        if initial_dim == 2:
+            enc[:, :, i][label_array == i] = 1
+        if initial_dim == 3:
+            enc[:, :, :, i][label_array == i] = 1
 
     return enc
 
