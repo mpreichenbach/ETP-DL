@@ -91,7 +91,7 @@ def train_generator(image_dir, mask_dir, batch_size, rot=True, v_flip=True, resc
                 y_batch.append(mask)
 
             # you likely don't need a rescale factor if you're using preprocessing layers in a model
-            x_batch = np.array(x_batch, np.float32) * rescale
-            y_batch = np.array(y_batch, np.float32)
+            x_batch = np.array(x_batch, dtype=np.float32) * rescale
+            y_batch = np.array(y_batch, dtype=np.float32)
 
             yield x_batch, y_batch
