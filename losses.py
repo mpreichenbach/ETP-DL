@@ -13,10 +13,10 @@ def iou_loss(y_true, y_pred):
     # ensures no division by zero, which can occur when a model accurately predicts no instances of the class.
     smooth = 1
 
-    intersection = 2 * K.cumsum(K.flatten(y_true * y_pred[-1]))
-    union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred[-1])) + smooth
+    intersection = 2 * K.sum(K.flatten(y_true * y_pred))
+    union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred)) + smooth
 
-    # perfect overlap implies iou = 1 due to the smooth parameter value, perfect non-overlap implies  iou = 0.
+    # perfect overlap implies iou = 1 due to the smooth parameter value, perfect non-overlap implies iou = 0.
     iou = intersection / union
 
     return 1 - iou
@@ -32,7 +32,7 @@ def log_iou_loss(y_true, y_pred):
     # ensures a nonzero numerator and denominator, so that the logarithm is well-define.
     smooth = 1
 
-    intersection = K.cumsum(K.flatten(y_true * y_pred[-1])) + smooth
-    union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred[-1])) + smooth
+    intersection = 2 * K.sum(K.flatten(y_true * y_pred)) + smooth
+    union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred)) + smooth
 
     return - K.log(intersection / union)
