@@ -89,12 +89,11 @@ def train_generator(image_dir, mask_dir, batch_size, classes=2, one_hot=False, r
                     mask = np.flip(mask, axis=0)
 
                 if one_hot:
-                    mask = label_to_oh(, mask2)
+                    mask = label_to_oh(mask, classes)
 
                 x_batch.append(img)
                 y_batch.append(mask)
 
-            # you likely don't need a rescale factor if you're using preprocessing layers in a model
             x_batch = np.array(x_batch)
             y_batch = np.array(y_batch)
 
