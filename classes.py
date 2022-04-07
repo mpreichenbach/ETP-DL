@@ -1,5 +1,6 @@
-from helper_functions import pt_model
 from datasets import dataset_gen
+from helper_functions import pt_model
+from losses import iou_loss, log_iou_loss
 from os import listdir
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
@@ -66,8 +67,12 @@ class SemSeg():
                                          rgb_path=train_path + "rgb/",
                                          mask_path=train_path + "masks/")
 
-        if len(listdir(train_path + "rgb/")) == len(listdir(train_path + "masks/")):
-            self.n_training_examples = len(listdir(train_path + "rgb/"))
+        if val_path is None:
+            print("Training data generator loaded.")
+
+        # make sure that the number of rgb and mask images is the same before updating n_training_examples
+        if len(listdir(train_path + "rgb/images/")) == len(listdir(train_path + "masks/images/")):
+            self.n_training_examples = len(listdir(train_path + "rgb/images/"))
         else:
             raise Exception("The number of RGB images does not match the number of Mask images in the training data.")
 
@@ -77,8 +82,11 @@ class SemSeg():
                                                rgb_path=val_path + "rgb/",
                                                mask_path=val_path + "masks/")
 
-            if len(listdir(val_path + "rgb/")) == len(listdir(val_path + "masks/")):
-                self.n_validation_examples = len(listdir(val_path + "rgb/"))
+            print("Training and validation data generators loaded.")
+
+            # make sure that the number of rgb and mask images is the same before updating n_validation_examples
+            if len(listdir(val_path + "rgb/images/")) == len(listdir(val_path + "masks/images/")):
+                self.n_validation_examples = len(listdir(val_path + "rgb/images/"))
             else:
                 raise Exception("The number of RGB images does not match the number of Mask images in the validation "
                                 "data.")

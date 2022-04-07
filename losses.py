@@ -21,14 +21,14 @@ def iou_loss(y_true, y_pred):
 
     return 1 - iou
 
-def log_iou(y_true, y_pred):
+def log_iou_loss(y_true, y_pred):
     """Compute a variation of the -log(IoU) loss introduced in 'Unitbox': An Advanced Object Detection Network. This
     version includes the 'smooth' parameter to ensure no division by zero.
 
     Args:
         y_true: tensor of ground-truth values of size (batch, height, width), so not one-hot encoded;
         y_pred: tensor of model predictions of size (batch, height, width, 2), so one-hot encoded."""
-    
+
     # ensures a nonzero numerator and denominator, so that the logarithm is well-define.
     smooth = 1
 
