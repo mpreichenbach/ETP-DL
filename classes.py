@@ -35,7 +35,7 @@ class SemSeg():
         self.metrics = {}
         self.confusion_table = None
 
-    def initialize(self, backbone="VGG19", n_classes=2, names=["non-building", "building"], concatenate=True,
+    def initial_model(self, backbone="VGG19", n_classes=2, class_names=["non-building", "building"], concatenate=True,
                    dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
@@ -151,7 +151,20 @@ class SemSeg():
                        callbacks=my_callbacks,
                        verbose=verbose)
 
+    def predict_test_data(self, count_on=50):
+        """Uses the initialized model to do inference on the manually loaded test data.
+        Args:
+            count_on (int): updates on progress are printed on multiples of this number."""
 
+        holder = np.zeros(self.test_masks)
+
+        for i in range(len(self.test_masks)):
+            holder[i] = vec_to_label(self.model.predict(np.expand_dims(self.test_rgb[i], 0)))
+            if (i + 1) % count_on == 0:
+                print("Finished inference on image " + str(i) + "/" + str(len(self.test_masks)) + ".")
+
+        self.test_prediction = holder
+        print("Finished inference on test data.")
 
     def generate_metrics(self, metrics=True, confusion_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
