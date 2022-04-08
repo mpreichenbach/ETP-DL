@@ -1,24 +1,34 @@
 from datasets import data_generator
-from helper_functions import pt_model
+from helper_functions import pt_model, iou, dice, total_acc
 import os
+import pandas as pd
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
 class SemSeg():
     def __init__(self):
-        # model attributes
+        # model
         self.model = None
         self.weight_path = None
+        self.n_classes = 0
 
-        # data attributes
+        # training data
         self.training_data = None
         self.training_path = None
         self.n_training_examples = 0
+        self.data_batch_size = 0
+        self.image_dimension = 512
+
+        # validation data
         self.validation_data = None
         self.validation_path = None
         self.n_validation_examples = 0
-        self.data_batch_size = 0
-        self.image_dimension = 512
-        self.n_classes = 0
+
+        # test data
+        self.test_data= None
+
+        # metrics (generated from test data)
+        self.metrics = None
+        self.confusion_table = None
 
     def initialize_weights(self, backbone="VGG19", n_classes=2, concatenate=True, dropout=0.2, optimizer='Adam',
                            loss='categorical_crossentropy'):
@@ -133,3 +143,11 @@ class SemSeg():
                        validation_steps=validation_steps,
                        callbacks=my_callbacks,
                        verbose=verbose)
+
+    def generate_metrics(self, metrics=True, confusion_table=True):
+        """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
+        test_data attribute.
+
+        Args:
+            metrics (bool): whether to calculate metrics like accuracy, IoU, and Dice scores;
+            confusion_table (bool): whether to generate """

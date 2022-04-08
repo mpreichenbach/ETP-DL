@@ -1,7 +1,7 @@
 # contains the main classes used for model training and comparison
 from helper_functions import unet_main_block, pt_model, vec_to_oh, vec_to_label, view_tiles, reduce_classes
 from matplotlib import pyplot as plt
-from metrics import iou, dice, total_acc
+from helper_functions import iou, dice, total_acc
 import numpy as np
 import os
 import pandas as pd

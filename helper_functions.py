@@ -1,110 +1,54 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
-from PIL import Image
 import tensorflow as tf
-from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, UpSampling2D
 import time
 
-def iou_loss(mask, pred):
-    """Computes the iou_loss for binary input tensors.
 
-    Args:
-        mask (numpy array): the array of true labels (should be one-hot encoded),
-        pred (numpy array): the array of predicted labels (one-hot encoded)."""
+def iou(y_true, y_pred):
+    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-loss for each class,
+    # and returns a vector of IoU scores. See https://en.wikipedia.org/wiki/Jaccard_index for more information.
 
-    # convert probability vector to label
-    pred = K.argmax(pred, axis=-1)
+    intersection = np.multiply(y_true, y_pred)
+    i_totals = np.sum(intersection, axis=(0, 1, 2))
+    union = y_true + y_pred - intersection
+    u_totals = np.sum(union, axis=(0, 1, 2))
 
-    intersection = K.prod(mask, pred)
-    union = mask + pred - intersection
+    # the following division will result in nans, so we suppress the warnings since we want to know where nans occur
+    with np.errstate(all='ignore'):
+        iou_vec = i_totals / u_totals
 
-    iou = intersection / union
+    return iou_vec
 
-    return 1 - iou
+def dice(y_true, y_pred):
+    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the dice-loss for each class,
+    # and returns a vector of dice scores. See https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient for
+    # more information.
 
-def iou_score(mask, pred):
-    """See https://en.wikipedia.org/wiki/Jaccard_index; we follow the notation of the first section."""
+    numerator = 2 * np.sum(np.multiply(y_true, y_pred), axis=(0, 1, 2))
+    denominator = np.sum(y_true, axis=(0, 1, 2)) + np.sum(y_pred, axis=(0, 1, 2))
 
-    if (mask.shape != pred.shape):
-        raise Exception("Input arrays have different shapes.")
+    # the following division can result in nans, so we suppress the warnings since we want to know where nans occur
+    with np.errstate(all='ignore'):
+        dice_vec = numerator / denominator
 
-    intersection = np.multiply(mask, pred)
-    union = mask + pred - intersection
+    return dice_vec
 
-    iou = np.sum(intersection) / np.sum(union)
+def total_acc(y_true, y_pred):
+    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the percentage accuracy of the
+    # model's prediction for each class. Note that y_pred should be one-hot encoded.
 
-    return iou
+    intersection = np.multiply(y_true, y_pred)
+    numerator = np.sum(intersection, axis=(0, 1, 2))
+    denominator = np.sum(y_true, axis=(0, 1, 2))
 
-def total_acc(mask, pred):
-    """Accuracy over all pixels."""
+    with np.errstate(all='ignore'):
+        acc_vec = numerator / denominator
 
-    if (mask.shape != pred.shape):
-        raise Exception("Input arrays have different shapes.")
-
-    acc = np.sum(np.where(mask == pred, 1, 0)) / (mask.shape[0] ** 2)
-
-    return acc
-
-def label_acc(mask, pred, label):
-    """Accuracy on only the given label."""
-
-    mask_labels = np.unique(mask).tolist()
-    pred_labels = np.unique(pred).tolist()
-
-    all_labels = set(mask_labels + pred_labels)
-
-    if (label not in all_labels):
-        raise Exception("Label " + str(label) + " is not in at least one of the input arrays.")
-
-    if (mask.shape != pred.shape):
-        raise Exception("Input arrays have different shapes.")
-
-    mask_holder = np.where(mask == label, 1, 0)
-    pred_holder = np.where(pred == label, 1, 0)
-
-    acc = np.sum(np.multiply(mask_holder, pred_holder)) / np.sum(mask_holder)
-
-    return acc
-
-def rotate(x):
-    """Performs a random rotation on the input image."""
-    return np.rot90(x, np.random.randint(0, 4))
-
-def numpy2img(array, path, type = "png", progress = 0):
-    """Given an array with dimensions (n_tiles, height, width, depth), saves the individual tiles as images of format
-    'type', in the folder given by path. The file name will be the corresponding n_tiles index.
-
-    Args:
-        array (ndarray): an array with dimensions (n_tiles, height, width, depth),
-        path (string): the path in which to save image files,
-        type (string): the desired file type,
-        progress (int)): gives the number of images to save before printing an update; if 0, no update is printed. """
-
-    if not isinstance(array, np.ndarray):
-        print("Argument 'array' must be of class np.ndarray.")
-        return
-    if not isinstance(path, str):
-        print("Argument 'path' must be a string.")
-        return
-    if not isinstance(type, str):
-        print("Argument 'type' must be a string.")
-        return
-
-    if path[-1] != "/":
-        print("Argument 'path' must end with /.")
-        return
-
-    n_images = len(array)
-
-    for i in range(n_images):
-        im = Image.fromarray(array[i])
-        im.save(fp = path + str(i) + "." + type)
-        if (progress != 0) & (i % progress == 0):
-            print("Finished saving " + str(i) + "/" + str(n_images) + " images.")
+    return acc_vec
 
 
 def reduce_classes(array, keep_labels=None):
