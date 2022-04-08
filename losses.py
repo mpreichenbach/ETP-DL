@@ -1,5 +1,5 @@
+import tensorflow as tf
 from tensorflow.keras import backend as K
-
 
 def iou_loss(y_true, y_pred):
     """Computes a variation of the loss 1 - IoU, the difference being the inclusion of the 'smooth' parameter to ensure
@@ -9,16 +9,20 @@ def iou_loss(y_true, y_pred):
         y_true: tensor of ground-truth values of size (batch, height, width, 2);
         y_pred: tensor of model predictions of size (batch, height, width, 2), so one-hot encoded."""
 
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+
     # ensures no division by zero, which can occur when a model accurately predicts no instances of the class.
     smooth = 1
 
     intersection = 2 * K.sum(K.flatten(y_true * y_pred))
     union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred)) + smooth
 
-    # perfect overlap implies iou = 1 due to the smooth parameter value, perfect non-overlap implies iou = 0.
-    iou = intersection / union
+    # perfect overlap yields a value slightly greater than 0, and perfect non-overlap yields a value slightly less than
+    # 1, due to the inclusion of the smooth parameter
+    final = 1 - intersection / union
 
-    return 1 - iou
+    return final
 
 def log_iou_loss(y_true, y_pred):
     """Compute a variation of the -log(IoU) loss introduced in 'Unitbox': An Advanced Object Detection Network. This
@@ -28,10 +32,17 @@ def log_iou_loss(y_true, y_pred):
         y_true: tensor of ground-truth values of size (batch, height, width), so not one-hot encoded;
         y_pred: tensor of model predictions of size (batch, height, width, 2), so one-hot encoded."""
 
-    # ensures a nonzero numerator and denominator, so that the logarithm is well-define.
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+
+    # ensures a nonzero numerator and denominator, so that the logarithm is well-defined.
     smooth = 1
 
-    intersection = 2 * K.sum(K.flatten(y_true * y_pred))
+    intersection = K.sum(K.flatten(y_true * y_pred)) + smooth
     union = K.sum(K.flatten(y_true + y_pred - y_true * y_pred)) + smooth
 
-    return - K.log(intersection / union)
+    # perfect overlap yields a value of 0, and perfect non-overlap yields a value greater than 1, which depends on the
+    # dimensions of the image.
+    final = - K.log(intersection / union)
+
+    return final
