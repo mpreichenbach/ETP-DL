@@ -61,7 +61,7 @@ def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_
         yield x, y
 
 
-def train_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
+def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
     """This is a custom generator, adapted from an example in a comment at
     https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
     want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the

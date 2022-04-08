@@ -1,7 +1,6 @@
-from datasets import dataset_gen
+from datasets import data_generator
 from helper_functions import pt_model
-from losses import iou_loss, log_iou_loss
-from os import listdir
+import os
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
 class SemSeg():
@@ -19,10 +18,10 @@ class SemSeg():
         self.n_validation_examples = 0
         self.data_batch_size = 0
         self.image_dimension = 512
-
+        self.n_classes = 0
 
     def initialize_weights(self, backbone="VGG19", n_classes=2, concatenate=True, dropout=0.2, optimizer='Adam',
-                           loss='sparse_categorical_crossentropy'):
+                           loss='categorical_crossentropy'):
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
             Args:
                 backbone (str): the name of the model used for backbones; see pt_model() for valid strings;
@@ -34,6 +33,8 @@ class SemSeg():
                               do=dropout,
                               opt=optimizer,
                               loss=loss)
+
+        self.n_classes = n_classes
 
         print("Model weights initialized.")
 
@@ -48,48 +49,51 @@ class SemSeg():
         self.model.load_weights(path)
         self.weight_path = path
 
-    def load_data(self, train_path, val_path=None, image_dim=512, batch_size=8):
-        """Creates paired iterators for training and validation data. Calls the function dataset_gen(), which has
-        more arguments than are given here.
+    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True, ):
+        """Creates generators for training and validation data. Calls the function data_generator, which has arguments
+        arguments for data augmentation (flipping and rotating) not included here.
 
         Args:
             train_path (str): the path to the training data, should have 'rgb' and 'masks' subfolders;
             val_path (str): the path to the validation data, should have 'rgb' and 'masks' subfolders;
-            batch_size (int > 0): the size of the batches to generate."""
+            image_dim (int): the height of images in the training data (assumed to be square);
+            batch_size (int > 0): the size of the batches to generate;
+            one_hot (bool): whether to perform a one-hot encoding on the labeled imagery."""
 
-        self.training_path = train_path
-        self.validation_path = val_path
-        self.image_dimension = 512
-        self.data_batch_size = 8
+        # make sure that the number of rgb and mask images is the same before training updating attributes
+        if len(os.listdir(train_path + "rgb")) == len(os.listdir(train_path + "masks")):
+            self.training_data = data_generator(image_dir=os.path.join(train_path, "rgb"),
+                                                mask_dir=os.path.join(train_path, "masks"),
+                                                batch_size=batch_size,
+                                                classes=self.n_classes,
+                                                one_hot=one_hot)
+            self.n_training_examples = len(os.listdir(train_path + "rgb"))
+            self.training_path = train_path
+            self.image_dimension = image_dim
+            self.batch_size = batch_size
 
-        self.training_data = dataset_gen(dim=image_dim,
-                                         batch_size=batch_size,
-                                         rgb_path=train_path + "rgb/",
-                                         mask_path=train_path + "masks/")
-
-        if val_path is None:
             print("Training data generator loaded.")
 
-        # make sure that the number of rgb and mask images is the same before updating n_training_examples
-        if len(listdir(train_path + "rgb/images/")) == len(listdir(train_path + "masks/images/")):
-            self.n_training_examples = len(listdir(train_path + "rgb/images/"))
         else:
-            raise Exception("The number of RGB images does not match the number of Mask images in the training data.")
+            raise Exception("The number of RGB images does not match the number of masks in the training data.")
 
         if val_path is not None:
-            self.validation_data = dataset_gen(dim=image_dim,
-                                               batch_size=batch_size,
-                                               rgb_path=val_path + "rgb/",
-                                               mask_path=val_path + "masks/")
+            # make sure that the number of RGB and mask images is the same before updating validation attributes
+            if len(os.listdir(val_path + "rgb")) == len(os.listdir(val_path + "masks")):
+                self.n_validation_examples = len(os.listdir(val_path + "rgb/images/"))
 
-            print("Training and validation data generators loaded.")
-
-            # make sure that the number of rgb and mask images is the same before updating n_validation_examples
-            if len(listdir(val_path + "rgb/images/")) == len(listdir(val_path + "masks/images/")):
-                self.n_validation_examples = len(listdir(val_path + "rgb/images/"))
             else:
                 raise Exception("The number of RGB images does not match the number of Mask images in the validation "
                                 "data.")
+
+            self.validation_data = data_generator(image_dir=os.path.join(val_path, "rgb"),
+                                                  mask_dir=os.path.join(val_path, "images"),
+                                                  batch_size=batch_size,
+                                                  classes=self.n_classes,
+                                                  one_hot=one_hot)
+            self.validation_path = val_path
+
+            print("Training and validation data generators loaded.")
 
     def train_model(self, epochs, save_path=None, monitor='val_loss', lr_factor=0.2, lr_patience=50,
                     my_callbacks=[], verbose=1):
@@ -100,7 +104,7 @@ class SemSeg():
                 lr_monitor (str): one of 'val_loss' or 'loss';
                 lr_factor (0 < float < 1): the factor by which to reduce the learning rate;
                 lr_patience (int): the number of epochs to elapse before reducing the learning rate;
-                verbose (0, 1, 2): the level of verbosity for the model.fit() method."""
+                verbose (0, 1, 2): the level of verbosity for fitting (see the Keras model.fit() method).)"""
 
         if monitor == 'val_loss' and self.validation_data is None:
             raise Exception("Either load validation_data, or change lr_monitor to 'loss'.")
@@ -110,9 +114,9 @@ class SemSeg():
             csv_callback = CSVLogger(save_path + "training_log.csv", append=True)
             my_callbacks.append(csv_callback)
 
-            saving_callback = ModelCheckpoint(filepath=save_path, monitor=monitor, save_best_only=True,
-                                            save_weights_only=True)
-            my_callbacks.append(saving_callback)
+            checkpoint_callback = ModelCheckpoint(filepath=save_path, monitor=monitor, save_best_only=True,
+                                                  save_weights_only=True)
+            my_callbacks.append(checkpoint_callback)
 
         if monitor is not None and lr_factor is not None and lr_patience is not None:
             lr_callback = ReduceLROnPlateau(monitor=monitor, factor=lr_factor, patience=lr_patience)
