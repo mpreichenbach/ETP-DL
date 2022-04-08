@@ -185,17 +185,22 @@ class SemSeg():
             score_names = ["IoU Score", "Dice Score"]
 
         if metrics:
+            y_true = np.flatten(self.test_masks)
+            y_pred = np.flatten(self.test_predictions)
+
             df_precision = pd.DataFrame(columns=precision_names)
-            p_values = []
-            for i in range(len(self.names)):
-                for j in range(len(self.test_masks)):
-                    p_values.append(precision_score())
-
             df_recall = pd.DataFrame(columns=recall_names)
-
             df_scores = pd.DataFrame(columns=score_names)
 
-            self.metrics = pd.concat([df_precision, df_recall, df_scores], axis=1)
+            # compute precision and recall scores
+            for i in range(len(self.class_names)):
 
+                df_precision[1, i] = precision_score(y_true, y_pred, pos_label=i)
+                df_recall[1, i] = recall_score(y_true, y_pred, pos_label=i)
+
+            # compute IoU and Dice scores (should these be by class too?)
+            df_scores[1, "IoU Score"] = jaccard_score()
+
+            self.metrics = pd.concat([df_precision, df_recall, df_scores], axis=1)
 
         if confusion_table:
