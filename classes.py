@@ -1,7 +1,9 @@
 from datasets import data_generator
-from helper_functions import pt_model, iou, dice, total_acc
+from helper_functions import pt_model, iou, dice, total_acc, vec_to_label
+import numpy as np
 import os
 import pandas as pd
+from sklearn.metrics import jaccard_score, recall_score, precision_score
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
 class SemSeg():
@@ -10,6 +12,7 @@ class SemSeg():
         self.model = None
         self.weight_path = None
         self.n_classes = 0
+        self.class_names = []
 
         # training data
         self.training_data = None
@@ -24,14 +27,17 @@ class SemSeg():
         self.n_validation_examples = 0
 
         # test data
-        self.test_data= None
+        self.test_rgb= None
+        self.test_masks = None
+        self.test_predictions = None
 
         # metrics (generated from test data)
-        self.metrics = None
+        self.metrics = {}
         self.confusion_table = None
 
-    def initialize_weights(self, backbone="VGG19", n_classes=2, concatenate=True, dropout=0.2, optimizer='Adam',
-                           loss='categorical_crossentropy'):
+    def initialize(self, backbone="VGG19", n_classes=2, names=["non-building", "building"], concatenate=True,
+                   dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
+
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
             Args:
                 backbone (str): the name of the model used for backbones; see pt_model() for valid strings;
@@ -45,6 +51,7 @@ class SemSeg():
                               loss=loss)
 
         self.n_classes = n_classes
+        self.class_names = class_names
 
         print("Model weights initialized.")
 
@@ -144,10 +151,38 @@ class SemSeg():
                        callbacks=my_callbacks,
                        verbose=verbose)
 
+
+
     def generate_metrics(self, metrics=True, confusion_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
         Args:
             metrics (bool): whether to calculate metrics like accuracy, IoU, and Dice scores;
-            confusion_table (bool): whether to generate """
+            confusion_table (bool): whether to generate a confusion table."""
+
+        if self.test_rgb is None or self.test_rgb is None:
+            raise Exception("You must manually load test data as a single Numpy array.")
+
+        if self.class_names == []:
+            raise Exception("Either run initialize, or manually update names attribute.")
+        else:
+            precision_names = [name + " precision" for name in self.class_names]
+            recall_names = [name + " recall" for name in self.class_names]
+            score_names = ["IoU Score", "Dice Score"]
+
+        if metrics:
+            df_precision = pd.DataFrame(columns=precision_names)
+            p_values = []
+            for i in range(len(self.names)):
+                for j in range(len(self.test_masks)):
+                    p_values.append(precision_score())
+
+            df_recall = pd.DataFrame(columns=recall_names)
+
+            df_scores = pd.DataFrame(columns=score_names)
+
+            self.metrics = pd.concat([df_precision, df_recall, df_scores], axis=1)
+
+
+        if confusion_table:
