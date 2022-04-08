@@ -6,7 +6,7 @@ import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS
 import numpy as np
 
 
-def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, one_hot=False, seed=1):
+def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, seed=1):
 
     """Creates a pair of iterators which will transform the images/masks in identical ways.
 
@@ -61,10 +61,21 @@ def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_
         yield x, y
 
 
-# this is a custom generator given at https://github.com/keras-team/keras/issues/3059, in case you need more control
-# over preprocessing functions. For example, ImageDataGenerators don't allow one-hot encoding in preprocessing.
+def train_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
+    """This is a custom generator, adapted from an example in a comment at
+    https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
+    want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
+    generator created by this function can perform that.
 
-def train_generator(image_dir, mask_dir, batch_size, classes=2, one_hot=False, rot=True, v_flip=True):
+    Args:
+        image_dir (str): path to input imagery;
+        mask_dir (str): path to labeled imagery;
+        batch_size (int): the number of images to include in a batch;
+        one_hot (bool): whether to perform a one-hot encoding on the labeled images;
+        classes (int): the number of classes in labeled imagery, only needed if one_hot=True;
+        rot (bool): whether to randomly rotate loaded images;
+        v_vflip (bool): whether to randomly flip images over the vertical axis."""
+
     list_images = os.listdir(image_dir)
     np.random.shuffle(list_images)
     ids_train_split = range(len(list_images))
@@ -75,9 +86,9 @@ def train_generator(image_dir, mask_dir, batch_size, classes=2, one_hot=False, r
             end = min(start + batch_size, len(ids_train_split))
             ids_train_batch = ids_train_split[start:end]
 
-            for id in ids_train_batch:
-                img = cv2.imread(os.path.join(image_dir, list_images[id]), cv2.IMREAD_COLOR)
-                mask = cv2.imread(os.path.join(mask_dir, list_images[id]), cv2.IMREAD_GRAYSCALE)
+            for ID in ids_train_batch:
+                img = cv2.imread(os.path.join(image_dir, list_images[ID]), cv2.IMREAD_COLOR)
+                mask = cv2.imread(os.path.join(mask_dir, list_images[ID]), cv2.IMREAD_GRAYSCALE)
 
                 if rot:
                     k_rot = np.random.randint(0, 4)
@@ -97,5 +108,4 @@ def train_generator(image_dir, mask_dir, batch_size, classes=2, one_hot=False, r
             x_batch = np.array(x_batch)
             y_batch = np.array(y_batch)
 
-            # yield x_batch, y_batch
             yield x_batch, y_batch
