@@ -3,7 +3,7 @@ from helper_functions import pt_model, iou, dice, total_acc, vec_to_label
 import numpy as np
 import os
 import pandas as pd
-from sklearn.metrics import jaccard_score, recall_score, precision_score
+from sklearn.metrics import jaccard_score, recall_score, precision_score, f1_score, confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
 class SemSeg():
@@ -35,7 +35,7 @@ class SemSeg():
         self.metrics = {}
         self.confusion_table = None
 
-    def initial_model(self, backbone="VGG19", n_classes=2, class_names=["non-building", "building"], concatenate=True,
+    def initial_model(self, backbone="VGG19", n_classes=2, class_names=("non-building", "building"), concatenate=True,
                    dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
@@ -166,7 +166,7 @@ class SemSeg():
         self.test_prediction = holder
         print("Finished inference on test data.")
 
-    def generate_metrics(self, metrics=True, confusion_table=True):
+    def generate_metrics(self, metrics=True, con_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -182,25 +182,31 @@ class SemSeg():
         else:
             precision_names = [name + " precision" for name in self.class_names]
             recall_names = [name + " recall" for name in self.class_names]
-            score_names = ["IoU Score", "Dice Score"]
+            iou_names = [name + "IoU Score" for name in self.class_names]
+            dice_names = [name + "IoU Score" for name in self.class_names]
+
+        y_true = np.flatten(self.test_masks)
+        y_pred = np.flatten(self.test_predictions)
 
         if metrics:
-            y_true = np.flatten(self.test_masks)
-            y_pred = np.flatten(self.test_predictions)
-
             df_precision = pd.DataFrame(columns=precision_names)
             df_recall = pd.DataFrame(columns=recall_names)
-            df_scores = pd.DataFrame(columns=score_names)
+            df_iou = pd.DataFrame(columns=iou_names)
+            df_dice = pd.DataFrame(columns=dice_names)
 
             # compute precision and recall scores
             for i in range(len(self.class_names)):
-
                 df_precision[1, i] = precision_score(y_true, y_pred, pos_label=i)
                 df_recall[1, i] = recall_score(y_true, y_pred, pos_label=i)
+                df_iou[1, i] = jaccard_score(y_true, y_pred, pos_label=i)
+                df_dice[1, i] = f1_score(y_true, y_pred, pos_label=i)
 
-            # compute IoU and Dice scores (should these be by class too?)
-            df_scores[1, "IoU Score"] = jaccard_score()
+            self.metrics = pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1)
 
-            self.metrics = pd.concat([df_precision, df_recall, df_scores], axis=1)
+            print("Metrics generated.")
 
-        if confusion_table:
+        if con_table:
+            table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
+            self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
+
+            print("Confusion table generated.")
