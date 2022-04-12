@@ -210,3 +210,23 @@ class SemSeg():
             self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
             print("Confusion table generated.")
+
+    def view_tiles(self, n=5, idx=None, rgb=True, mask=True, pred=True, data=None):
+        """Outputs an image for visually inspecting model performance. Defaults to a random selection from the test
+        data, unless a tuple (RGB, masks) of Numpy arrays is passed in data.
+
+        Args:
+            n (int): number of examples to show (number of rows in the image);
+            idx (list): a vector of indices in the test set;
+            rgb (boolean): whether to include RGB imagery in the display;
+            mask (boolean): whether to include masks in the display;
+            pred (boolean): whether to include predictions in the display;
+            data (tuple): a tuple (RGB, masks) of numpy arrays to draw from."""
+
+        if idx is None and data is not None:
+            raise Exception("Specify indices to display from the data.")
+
+        if idx is not None and data is None:
+            raise Exception("Include a tuple (RGB, masks) of data to draw from.")
+
+        ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
