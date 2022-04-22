@@ -35,7 +35,7 @@ class SemSeg():
         self.metrics = {}
         self.confusion_table = None
 
-    def initial_model(self, backbone="VGG19", n_classes=2, class_names=("non-building", "building"), concatenate=True,
+    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, class_names=("non-building", "building"), concatenate=True,
                    dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
@@ -44,6 +44,7 @@ class SemSeg():
                 n_classes (int > 1): the number of classes to predict"""
 
         self.model = pt_model(backbone=backbone,
+                              n_filters=n_filters,
                               n_classes=n_classes,
                               concatenate=concatenate,
                               do=dropout,
@@ -66,7 +67,7 @@ class SemSeg():
         self.model.load_weights(path)
         self.weight_path = path
 
-    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True, ):
+    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True):
         """Creates generators for training and validation data. Calls the function data_generator, which has arguments
         arguments for data augmentation (flipping and rotating) not included here.
 
@@ -230,5 +231,3 @@ class SemSeg():
             raise Exception("Include a tuple (RGB, masks) of data to draw from.")
 
         ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
-
-

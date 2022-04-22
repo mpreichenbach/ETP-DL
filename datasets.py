@@ -6,6 +6,56 @@ import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS
 import numpy as np
 
 
+def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
+    """This is a custom generator, adapted from an example in a comment at
+    https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
+    want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
+    generator created by this function can perform that.
+
+    Args:
+        image_dir (str): path to input imagery;
+        mask_dir (str): path to labeled imagery;
+        batch_size (int): the number of images to include in a batch;
+        one_hot (bool): whether to perform a one-hot encoding on the labeled images;
+        classes (int): the number of classes in labeled imagery, only needed if one_hot=True;
+        rot (bool): whether to randomly rotate loaded images;
+        v_vflip (bool): whether to randomly flip images over the vertical axis."""
+
+    list_images = os.listdir(image_dir)
+    np.random.shuffle(list_images)
+    ids_train_split = range(len(list_images))
+    while True:
+        for start in range(0, len(ids_train_split), batch_size):
+            x_batch = []
+            y_batch = []
+            end = min(start + batch_size, len(ids_train_split))
+            ids_train_batch = ids_train_split[start:end]
+
+            for ID in ids_train_batch:
+                img = cv2.imread(os.path.join(image_dir, list_images[ID]), cv2.IMREAD_COLOR)
+                mask = cv2.imread(os.path.join(mask_dir, list_images[ID]), cv2.IMREAD_GRAYSCALE)
+
+                if rot:
+                    k_rot = np.random.randint(0, 4)
+                    img = np.rot90(img, k=k_rot)
+                    mask = np.rot90(mask, k=k_rot)
+
+                if v_flip and np.random.randint(0, 2) == 1:
+                    img = np.flip(img, axis=0)
+                    mask = np.flip(mask, axis=0)
+
+                if one_hot:
+                    mask = label_to_oh(mask, classes)
+
+                x_batch.append(img)
+                y_batch.append(mask)
+
+            x_batch = np.array(x_batch)
+            y_batch = np.array(y_batch)
+
+            yield x_batch, y_batch
+
+
 def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, seed=1):
 
     """Creates a pair of iterators which will transform the images/masks in identical ways.
@@ -61,51 +111,3 @@ def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_
         yield x, y
 
 
-def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
-    """This is a custom generator, adapted from an example in a comment at
-    https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
-    want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
-    generator created by this function can perform that.
-
-    Args:
-        image_dir (str): path to input imagery;
-        mask_dir (str): path to labeled imagery;
-        batch_size (int): the number of images to include in a batch;
-        one_hot (bool): whether to perform a one-hot encoding on the labeled images;
-        classes (int): the number of classes in labeled imagery, only needed if one_hot=True;
-        rot (bool): whether to randomly rotate loaded images;
-        v_vflip (bool): whether to randomly flip images over the vertical axis."""
-
-    list_images = os.listdir(image_dir)
-    np.random.shuffle(list_images)
-    ids_train_split = range(len(list_images))
-    while True:
-        for start in range(0, len(ids_train_split), batch_size):
-            x_batch = []
-            y_batch = []
-            end = min(start + batch_size, len(ids_train_split))
-            ids_train_batch = ids_train_split[start:end]
-
-            for ID in ids_train_batch:
-                img = cv2.imread(os.path.join(image_dir, list_images[ID]), cv2.IMREAD_COLOR)
-                mask = cv2.imread(os.path.join(mask_dir, list_images[ID]), cv2.IMREAD_GRAYSCALE)
-
-                if rot:
-                    k_rot = np.random.randint(0, 4)
-                    img = np.rot90(img, k=k_rot)
-                    mask = np.rot90(mask, k=k_rot)
-
-                if v_flip and np.random.randint(0, 2) == 1:
-                    img = np.flip(img, axis=0)
-                    mask = np.flip(mask, axis=0)
-
-                if one_hot:
-                    mask = label_to_oh(mask, classes)
-
-                x_batch.append(img)
-                y_batch.append(mask)
-
-            x_batch = np.array(x_batch)
-            y_batch = np.array(y_batch)
-
-            yield x_batch, y_batch

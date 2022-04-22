@@ -103,8 +103,8 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    if backbone != n_filters:
-        raise Exception("If you specify one of backbone or filters, you must specify both.")
+    if backbone is None and n_filters is None:
+        raise Exception("You must specify n_filters when backbone is None.")
 
     # testing the following line:
     input = Input(shape=(None, None, 3), dtype=tf.float32)
@@ -461,9 +461,10 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         x = MaxPooling2D(padding='same')(x3)
         n_filters *= 2
         x4 = unet_main_block(x, n_filters=n_filters)
+        x = MaxPooling2D(padding='same')(x4)
 
         # upsamping path
-        x5 = UpSampling2D(size=(2, 2))(x4)
+        x5 = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x5, x3]) if concatenate else x
         n_filters = int(n_filters / 2)
         x = unet_main_block(x, n_filters=n_filters)
