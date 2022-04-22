@@ -1,5 +1,5 @@
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from helper_functions import rotate, label_to_oh
+from helper_functions import label_to_oh
 import os
 os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2,40).__str__()
 import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS

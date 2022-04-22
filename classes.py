@@ -230,3 +230,5 @@ class SemSeg():
             raise Exception("Include a tuple (RGB, masks) of data to draw from.")
 
         ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
+
+

@@ -4,7 +4,7 @@ from matplotlib.colors import Normalize
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
-from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, Lambda, UpSampling2D
+from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 import time
 
 
@@ -80,7 +80,7 @@ def reduce_classes(array, keep_labels=None):
     return out_array.astype(np.uint8)
 
 
-def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
+def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
@@ -102,6 +102,9 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='sp
                                the same shape in the upsampling path.
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
+
+    if backbone != n_filters:
+        raise Exception("If you specify one of backbone or filters, you must specify both.")
 
     # testing the following line:
     input = Input(shape=(None, None, 3), dtype=tf.float32)
@@ -445,6 +448,41 @@ def pt_model(backbone, n_classes, concatenate=True, do=0.2, opt='Adam', loss='sp
 
         return cnn_pt
 
+    if backbone is None:
+        # downsampling path
+        n_filters = 16
+        x1 = unet_main_block(input, n_filters=n_filters)
+        x = MaxPooling2D(padding='same')(x1)
+        n_filters *= 2
+        x2 = unet_main_block(x, n_filters=n_filters)
+        x = MaxPooling2D(padding='same')(x2)
+        n_filters *= 2
+        x3 = unet_main_block(x, n_filters=n_filters)
+        x = MaxPooling2D(padding='same')(x3)
+        n_filters *= 2
+        x4 = unet_main_block(x, n_filters=n_filters)
+
+        # upsamping path
+        x5 = UpSampling2D(size=(2, 2))(x4)
+        x = Concatenate(axis=-1)([x5, x3]) if concatenate else x
+        n_filters = int(n_filters / 2)
+        x = unet_main_block(x, n_filters=n_filters)
+        x7 = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x7, x2]) if concatenate else x
+        n_filters = int(n_filters / 2)
+        x = unet_main_block(x, n_filters=n_filters)
+        x8 = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x8, x1]) if concatenate else x
+        n_filters = int(n_filters / 2)
+        x9 = unet_main_block(x, n_filters=n_filters)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x9)
+
+        # compile the model with the chosen optimizer and loss functions
+        cnn_pt = Model(input, output_img)
+        cnn_pt.compile(optimizer=opt, loss=loss)
+
+        return cnn_pt
+
 def vec_to_label(oh_array):
     output = np.argmax(oh_array, axis=-1).astype(np.uint8)
 
@@ -594,7 +632,7 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
         plt.savefig(path, bbox_inches='tight')
 
 
-def unet_main_block(m, n_filters, dim, bn, do_rate):
+def unet_main_block(m, n_filters, dim=3, bn=True, do_rate=0.2):
     """The primary convolutional block in the UNet network.
 
         Args:
