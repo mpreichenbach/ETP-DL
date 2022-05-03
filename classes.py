@@ -152,22 +152,36 @@ class SemSeg():
                        callbacks=my_callbacks,
                        verbose=verbose)
 
-    def predict_test_data(self, count_on=50):
+
+class Metrics():
+    def __init__(self):
+        self.model = None
+        self.test_data = []
+        self.class_names = ["not-building", "building"]
+        self.predicted_data = None
+
+    def predict_test_data(self, verbose=50):
         """Uses the initialized model to do inference on the manually loaded test data.
         Args:
-            count_on (int): updates on progress are printed on multiples of this number."""
+            verbose (int): updates on progress are printed on multiples of this number."""
 
-        holder = np.zeros(self.test_masks)
+        if len(self.test_data) !=2:
+            raise Exception("Load test data as a list of the form [rgb, masks].")
 
-        for i in range(len(self.test_masks)):
-            holder[i] = vec_to_label(self.model.predict(np.expand_dims(self.test_rgb[i], 0)))
-            if (i + 1) % count_on == 0:
-                print("Finished inference on image " + str(i) + "/" + str(len(self.test_masks)) + ".")
+        rgb = self.test_data[0]
+        masks = self.test_data[1]
 
-        self.test_prediction = holder
+        holder = np.zeros(masks.shape, dtype=np.uint8)
+
+        for i in range(len(masks)):
+            holder[i] = vec_to_label(self.model.predict(np.expand_dims(rgb[i], 0)))
+            if (i + 1) % verbose == 0:
+                print("Finished inference on image " + str(i) + "/" + str(len(rgb)) + ".")
+
+        self.predicted_data = holder
         print("Finished inference on test data.")
 
-    def generate_metrics(self, metrics=True, con_table=True):
+    def generate_metrics(self, metrics=True, confusion_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -175,19 +189,19 @@ class SemSeg():
             metrics (bool): whether to calculate metrics like accuracy, IoU, and Dice scores;
             confusion_table (bool): whether to generate a confusion table."""
 
-        if self.test_rgb is None or self.test_rgb is None:
-            raise Exception("You must manually load test data as a single Numpy array.")
+        if self.predicted_data is None:
+            raise Exception("Run predict_test_data method before generating metrics.")
 
-        if self.class_names == []:
-            raise Exception("Either run initialize, or manually update names attribute.")
+        if len(self.class_names) != len(np.unique(self.test_data[1])):
+            raise Exception("Mismatch between number of class names, and number of classes present in the test data.")
         else:
             precision_names = [name + " precision" for name in self.class_names]
             recall_names = [name + " recall" for name in self.class_names]
             iou_names = [name + "IoU Score" for name in self.class_names]
             dice_names = [name + "IoU Score" for name in self.class_names]
 
-        y_true = np.flatten(self.test_masks)
-        y_pred = np.flatten(self.test_predictions)
+        y_true = np.flatten(self.test_data[1])
+        y_pred = np.flatten(self.predicted_data)
 
         if metrics:
             df_precision = pd.DataFrame(columns=precision_names)
@@ -206,7 +220,7 @@ class SemSeg():
 
             print("Metrics generated.")
 
-        if con_table:
+        if confusion_table:
             table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
             self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
@@ -231,3 +245,4 @@ class SemSeg():
             raise Exception("Include a tuple (RGB, masks) of data to draw from.")
 
         ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
+
