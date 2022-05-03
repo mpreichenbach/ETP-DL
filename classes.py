@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.metrics import jaccard_score, recall_score, precision_score, f1_score, confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
-class SemSeg:
+class SemSeg():
     def __init__(self):
         # model
         self.model = None
@@ -18,7 +18,7 @@ class SemSeg:
         self.training_data = None
         self.training_path = None
         self.n_training_examples = 0
-        self.data_batch_size = 0
+        self.batch_size = 0
         self.image_dimension = 512
 
         # validation data
@@ -81,7 +81,8 @@ class SemSeg:
             self.image_dimension = image_dim
             self.batch_size = batch_size
 
-            print("Training data generator loaded.")
+            if val_path is None:
+                print("Training data generator loaded.")
 
         else:
             raise Exception("The number of RGB images does not match the number of masks in the training data.")
@@ -89,14 +90,14 @@ class SemSeg:
         if val_path is not None:
             # make sure that the number of RGB and mask images is the same before updating validation attributes
             if len(os.listdir(val_path + "rgb")) == len(os.listdir(val_path + "masks")):
-                self.n_validation_examples = len(os.listdir(val_path + "rgb/images/"))
+                self.n_validation_examples = len(os.listdir(val_path + "rgb"))
 
             else:
                 raise Exception("The number of RGB images does not match the number of Mask images in the validation "
                                 "data.")
 
             self.validation_data = data_generator(image_dir=os.path.join(val_path, "rgb"),
-                                                  mask_dir=os.path.join(val_path, "images"),
+                                                  mask_dir=os.path.join(val_path, "masks"),
                                                   batch_size=batch_size,
                                                   classes=self.n_classes,
                                                   one_hot=one_hot)
@@ -132,8 +133,8 @@ class SemSeg:
             my_callbacks.append(lr_callback)
 
         # calculate the number of steps_per_epoch to exhaust the training/validation generators
-        steps_per_epoch = int(self.n_training_examples / self.data_batch_size) + 1
-        validation_steps = int(self.n_validation_examples / self.data_batch_size) + 1
+        steps_per_epoch = int(self.n_training_examples / self.batch_size) + 1
+        validation_steps = int(self.n_validation_examples / self.batch_size) + 1
 
         self.model.fit(self.training_data,
                        epochs=epochs,
@@ -144,12 +145,14 @@ class SemSeg:
                        verbose=verbose)
 
 
-class Metrics:
+class Metrics():
     def __init__(self):
         self.model = None
         self.test_data = []
         self.class_names = ["not-building", "building"]
         self.predicted_data = None
+        self.metrics = None
+        self.confusion_table = None
 
     def predict_test_data(self, verbose=50):
         """Uses the initialized model to do inference on the manually loaded test data.
