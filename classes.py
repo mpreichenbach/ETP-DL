@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.metrics import jaccard_score, recall_score, precision_score, f1_score, confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 
-class SemSeg():
+class SemSeg:
     def __init__(self):
         # model
         self.model = None
@@ -25,15 +25,6 @@ class SemSeg():
         self.validation_data = None
         self.validation_path = None
         self.n_validation_examples = 0
-
-        # test data
-        self.test_rgb= None
-        self.test_masks = None
-        self.test_predictions = None
-
-        # metrics (generated from test data)
-        self.metrics = {}
-        self.confusion_table = None
 
     def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, class_names=("non-building", "building"), concatenate=True,
                    dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
@@ -153,7 +144,7 @@ class SemSeg():
                        verbose=verbose)
 
 
-class Metrics():
+class Metrics:
     def __init__(self):
         self.model = None
         self.test_data = []
