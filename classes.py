@@ -194,8 +194,8 @@ class Metrics():
             iou_names = [name + "IoU Score" for name in self.class_names]
             dice_names = [name + "IoU Score" for name in self.class_names]
 
-        y_true = np.flatten(self.test_data[1])
-        y_pred = np.flatten(self.predicted_data)
+        y_true = self.test_data[1].flatten()
+        y_pred = self.predicted_data.flatten()
 
         if metrics:
             df_precision = pd.DataFrame(columns=precision_names)
