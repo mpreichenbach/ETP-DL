@@ -1,5 +1,5 @@
 from datasets import data_generator
-from helper_functions import pt_model, iou, dice, total_acc, vec_to_label
+from helper_functions import pt_model, vec_to_label
 import numpy as np
 import os
 import pandas as pd

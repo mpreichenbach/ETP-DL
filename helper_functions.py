@@ -8,49 +8,6 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-def iou(y_true, y_pred):
-    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the IoU-loss for each class,
-    # and returns a vector of IoU scores. See https://en.wikipedia.org/wiki/Jaccard_index for more information.
-
-    intersection = np.multiply(y_true, y_pred)
-    i_totals = np.sum(intersection, axis=(0, 1, 2))
-    union = y_true + y_pred - intersection
-    u_totals = np.sum(union, axis=(0, 1, 2))
-
-    # the following division will result in nans, so we suppress the warnings since we want to know where nans occur
-    with np.errstate(all='ignore'):
-        iou_vec = i_totals / u_totals
-
-    return iou_vec
-
-def dice(y_true, y_pred):
-    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the dice-loss for each class,
-    # and returns a vector of dice scores. See https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient for
-    # more information.
-
-    numerator = 2 * np.sum(np.multiply(y_true, y_pred), axis=(0, 1, 2))
-    denominator = np.sum(y_true, axis=(0, 1, 2)) + np.sum(y_pred, axis=(0, 1, 2))
-
-    # the following division can result in nans, so we suppress the warnings since we want to know where nans occur
-    with np.errstate(all='ignore'):
-        dice_vec = numerator / denominator
-
-    return dice_vec
-
-def total_acc(y_true, y_pred):
-    # Given input tensors of shape (batch_size, height, width, n_classes), this computes the percentage accuracy of the
-    # model's prediction for each class. Note that y_pred should be one-hot encoded.
-
-    intersection = np.multiply(y_true, y_pred)
-    numerator = np.sum(intersection, axis=(0, 1, 2))
-    denominator = np.sum(y_true, axis=(0, 1, 2))
-
-    with np.errstate(all='ignore'):
-        acc_vec = numerator / denominator
-
-    return acc_vec
-
-
 def reduce_classes(array, keep_labels=None):
     """Takes array of labels and keeps only the classes given in keep_labels. If keep_labels=[a, b], then output will
     have values [0, 1, 2], where 1 corresponds to a, 2 corresponds to b, and 0 corresponds to all values in array which
@@ -78,7 +35,6 @@ def reduce_classes(array, keep_labels=None):
             out_array = np.where(array == val, new_val, out_array)
 
     return out_array.astype(np.uint8)
-
 
 def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
@@ -539,27 +495,6 @@ def tile_apply(image, model, tile_dim, output_type=np.uint8):
 
     return holder
 
-def tvt_split(array, splits=[0.7, 0.2]):
-    """Creates a training/validation/test split of an array.
-
-    Args:
-        array (array-like): the array of shape (batch size, height, width, depth) to be split,
-        splits (list): the proportions to put into training/validation, respectively; the remainder is testing."""
-
-    arr = np.asarray(array)
-    train_size = int(splits[0] * arr.shape[0])
-    val_size = int(splits[1] * arr.shape[0])
-
-    train_choices = np.random.choice(arr.shape[0], train_size, replace=False)
-    training = arr[train_choices]
-
-    holder = np.delete(arr, train_choices, axis=0)
-    val_choices = np.random.choice(holder.shape[0], val_size, replace=False)
-    validation = holder[val_choices]
-    testing = np.delete(holder, val_choices, axis=0)
-
-    return [training, validation, testing]
-
 def vec_to_oh(array):
     """This function takes "array" and converts its depth-wise probability vectors to one-hot encodings.
 
@@ -631,7 +566,6 @@ def view_tiles(sats, masks, models, n_tiles=5, classes=6, choices=None, cmap='Ac
 
     if path is not None:
         plt.savefig(path, bbox_inches='tight')
-
 
 def unet_main_block(m, n_filters, dim=3, bn=True, do_rate=0.2):
     """The primary convolutional block in the UNet network.
