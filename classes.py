@@ -125,7 +125,7 @@ class SemSeg():
             my_callbacks.append(csv_callback)
 
             checkpoint_callback = ModelCheckpoint(filepath=save_path, monitor=monitor, save_best_only=True,
-                                                  save_weights_only=True)
+                                                  save_weights_only=True, save_freq="epoch", verbose=verbose)
             my_callbacks.append(checkpoint_callback)
 
         if monitor is not None and lr_factor is not None and lr_patience is not None:

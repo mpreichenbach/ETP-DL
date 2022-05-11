@@ -406,33 +406,34 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
 
     if backbone is None:
         # downsampling path
-        n_filters = 16
-        x1 = unet_main_block(input, n_filters=n_filters)
+        x1 = unet_main_block(input, n_filters=n_filters, do_rate=do)
         x = MaxPooling2D(padding='same')(x1)
         n_filters *= 2
-        x2 = unet_main_block(x, n_filters=n_filters)
+        x2 = unet_main_block(x, n_filters=n_filters, do_rate=do)
         x = MaxPooling2D(padding='same')(x2)
         n_filters *= 2
-        x3 = unet_main_block(x, n_filters=n_filters)
+        x3 = unet_main_block(x, n_filters=n_filters, do_rate=do)
         x = MaxPooling2D(padding='same')(x3)
         n_filters *= 2
-        x4 = unet_main_block(x, n_filters=n_filters)
+        x4 = unet_main_block(x, n_filters=n_filters, do_rate=do)
         x = MaxPooling2D(padding='same')(x4)
 
         # upsamping path
         x5 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x5, x3]) if concatenate else x
+        x = Concatenate(axis=-1)([x5, x4]) if concatenate else x5
         n_filters = int(n_filters / 2)
-        x = unet_main_block(x, n_filters=n_filters)
+        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
+        x6 = UpSampling2D(size=(2, 2))(x)
+        x = Concatenate(axis=-1)([x6, x3]) if concatenate else x6
+        n_filters = int(n_filters / 2)
+        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
         x7 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x7, x2]) if concatenate else x
+        x = Concatenate(axis=-1)([x7, x2]) if concatenate else x7
         n_filters = int(n_filters / 2)
-        x = unet_main_block(x, n_filters=n_filters)
-        x8 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x8, x1]) if concatenate else x
+        x8 = unet_main_block(x, n_filters=n_filters, do_rate=do)
+        x = Concatenate(axis=-1)([x8, x1]) if concatenate else x8
         n_filters = int(n_filters / 2)
-        x9 = unet_main_block(x, n_filters=n_filters)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x9)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x8)
 
         # compile the model with the chosen optimizer and loss functions
         cnn_pt = Model(input, output_img)
