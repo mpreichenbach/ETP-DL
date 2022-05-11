@@ -63,7 +63,7 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         raise Exception("You must specify n_filters when backbone is None.")
 
     # testing the following line:
-    input = Input(shape=(512, 512, 3), dtype=tf.float32)
+    input = Input(shape=(None, None, 3), dtype=tf.float32)
 
     # input = Input(input_shape, dtype=tf.float32)
 
