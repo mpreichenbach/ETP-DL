@@ -63,7 +63,7 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         raise Exception("You must specify n_filters when backbone is None.")
 
     # testing the following line:
-    input = Input(shape=(None, None, 3), dtype=tf.float32)
+    input = Input(shape=(512, 512, 3), dtype=tf.float32)
 
     # input = Input(input_shape, dtype=tf.float32)
 
@@ -430,10 +430,10 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         x7 = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x7, x2]) if concatenate else x7
         n_filters = int(n_filters / 2)
-        x8 = unet_main_block(x, n_filters=n_filters, do_rate=do)
+        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
+        x8 = UpSampling2D(size=(2, 2))(x)
         x = Concatenate(axis=-1)([x8, x1]) if concatenate else x8
-        n_filters = int(n_filters / 2)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x8)
+        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
         # compile the model with the chosen optimizer and loss functions
         cnn_pt = Model(input, output_img)
