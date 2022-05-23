@@ -14,7 +14,7 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
     mosaic dimensions evenly.
 
     Args:
-        mosaic_list (list): a list of ndarrays, usually [0] is imagery and [1] is the label array;
+        mosaic_list (list): a list of ndarrays, we assume [0] is imagery and [1] is the mask;
         tile_dim (int): the size of tiles to generate;
         dtype (Numpy dtype): the datatype for the output arrays;
         drop_nodata_tiles (bool): whether to ignore tiles which have a 0 in each depth dimension;
@@ -33,30 +33,30 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
 
     # create the lists to hold the tiles (assumes there are only two: [imagery, labels])
     imagery_tiles = []
-    label_tiles = []
+    mask_tiles = []
 
     imagery_array = mosaic_list[0]
-    label_array = mosaic_list[1]
+    mask_array = mosaic_list[1]
 
     height = imagery_array.shape[0]
     width = imagery_array.shape[1]
     for i in range(int(height / tile_dim)):
         for j in range(int(width / tile_dim)):
             imagery_tile = imagery_array[tile_dim * i: tile_dim * (i + 1), tile_dim * j: tile_dim * (j + 1)]
-            label_tile = label_array[tile_dim * i: tile_dim * (i + 1), tile_dim * j: tile_dim * (j + 1)]
+            mask_tile = mask_array[tile_dim * i: tile_dim * (i + 1), tile_dim * j: tile_dim * (j + 1)]
 
             # We assume nodata pixels are 0 for each depth dimension; this checks whether that's true anywhere in the
             # tile, and whether the labels have only one value; if all this is true, the loop moves to the next tile.
             depth_sum = np.sum(imagery_tile, axis=-1)
-            if drop_nodata_tiles and 0 in np.unique(depth_sum) or len(np.unique(label_tile)) == 1:
+            if drop_nodata_tiles and 0 in np.unique(depth_sum) or len(np.unique(mask_tile)) == 1:
                 continue
             else:
                 # reshape to allow easy concatenate later
                 imagery_tile = np.expand_dims(imagery_tile, 0)
-                label_tile = np.expand_dims(label_tile, 0)
+                mask_tile = np.expand_dims(mask_tile, 0)
 
                 imagery_tiles.append(imagery_tile)
-                label_tiles.append(label_tile)
+                mask_tiles.append(mask_tile)
 
             if verbose and len(imagery_tiles) % verbose == 0:
                 n_tiles = len(imagery_tiles)
@@ -64,7 +64,7 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
                 print("Out of a maximum of " + str(max_tiles) + ", " + str(n_tiles) + " complete.")
 
     rgb_tile_array = np.concatenate(imagery_tiles, axis=0, dtype=dtype)
-    label_tile_array = np.concatenate(label_tiles, axis=0, dtype=dtype)
+    label_tile_array = np.concatenate(mask_tiles, axis=0, dtype=dtype)
 
     return rgb_tile_array, label_tile_array
 
