@@ -147,35 +147,47 @@ class SemSeg():
 
 class Metrics():
     def __init__(self):
+        self.data_path = "D:/ETP Data/Project Inria/Test/"
         self.model = None
-        self.test_data = []
+        self.test_data = {}
+        self.test_names = ["bloomington", "san_francisco"]
         self.class_names = ["not-building", "building"]
-        self.predicted_data = None
-        self.metrics = None
-        self.confusion_table = None
+        self.predicted_data = {}
+        self.metrics = {}
+        self.confusion_tables = {}
 
-    def predict_test_data(self, verbose=50):
-        """Uses the initialized model to do inference on the manually loaded test data.
+
+    def load_data(self):
+        """Loads the test Numpy arrays into a dictionary, with names as their keys."""
+
+        for data_name in self.test_names:
+            rgb = np.load(self.data_path + data_name + "_rgb.npy")
+            mask = np.load(self.data_path + data_name + "_masks.npy")
+
+            self.test_data[data_name] = [rgb, mask]
+
+        print("Finished loading test data.")
+
+    def predict_test_data(self, batch_size=8, verbose=1):
+        """Uses the initialized model to do inference on the test data named in self.test_names.
+
         Args:
-            verbose (int): updates on progress are printed on multiples of this number."""
+            batch_size (int): the size of batches on which to do inference (last batch may be smaller);
+            verbose (int): passed to verbosity level of model.predict in Keras."""
 
-        if len(self.test_data) !=2:
-            raise Exception("Load test data as a list of the form [rgb, masks].")
+        if self.test_data == {}:
+            raise Exception("First load some data with load_data.")
 
-        rgb = self.test_data[0]
-        masks = self.test_data[1]
+        for data_name in self.test_names:
+            rgb = self.test_data[data_name][0]
+            print("Performing inference on test dataset " + data_name + ".")
+            pred = vec_to_label(self.model.predict(rgb, batch_size=batch_size, verbose=verbose))
 
-        holder = np.zeros(masks.shape, dtype=np.uint8)
+            self.test_data[data_name].append(pred)
 
-        for i in range(len(masks)):
-            holder[i] = vec_to_label(self.model.predict(np.expand_dims(rgb[i], 0)))
-            if (i + 1) % verbose == 0:
-                print("Finished inference on image " + str(i) + "/" + str(len(rgb)) + ".")
-
-        self.predicted_data = holder
         print("Finished inference on test data.")
 
-    def generate_metrics(self, metrics=True, confusion_table=True):
+    def generate_metrics(self, metrics=True, single_metrics_table=True, confusion_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -183,42 +195,57 @@ class Metrics():
             metrics (bool): whether to calculate metrics like accuracy, IoU, and Dice scores;
             confusion_table (bool): whether to generate a confusion table."""
 
-        if self.predicted_data is None:
-            raise Exception("Run predict_test_data method before generating metrics.")
+        # make sure that predicted data has been generated
+        shape_dim_list = []
+        for data_name in self.test_names:
+            dataset = self.test_data[data_name]
+            shape_dim_list.append(len(dataset))
+            if np.unique(shape_dim_list).tolist().pop() == 3:
+                continue
+            else:
+                raise Exception("Run predict_test_data before generating_metrics.")
 
-        if len(self.class_names) != len(np.unique(self.test_data[1])):
-            raise Exception("Mismatch between number of class names, and number of classes present in the test data.")
-        else:
+        # make sure that that correct number of classes actually exists in the test data
+        if len(self.class_names) == len(np.unique(self.test_data[1])):
             precision_names = [name + " precision" for name in self.class_names]
             recall_names = [name + " recall" for name in self.class_names]
             iou_names = [name + "IoU Score" for name in self.class_names]
             dice_names = [name + "IoU Score" for name in self.class_names]
+        else:
+            raise Exception("Mismatch between number of class names, and number of classes present in the test data.")
 
-        y_true = self.test_data[1].flatten()
-        y_pred = self.predicted_data.flatten()
+        # generate metrics
+        metrics_holder = []
+        for data_name in self.test_names:
+            y_true = self.test_data[data_name][1].flatten()
+            y_pred = self.test_data[data_name][2].flatten()
 
-        if metrics:
-            df_precision = pd.DataFrame(columns=precision_names)
-            df_recall = pd.DataFrame(columns=recall_names)
-            df_iou = pd.DataFrame(columns=iou_names)
-            df_dice = pd.DataFrame(columns=dice_names)
+            if metrics:
+                df_precision = pd.DataFrame(index=[data_name], columns=precision_names)
+                df_recall = pd.DataFrame(index=[data_name], columns=recall_names)
+                df_iou = pd.DataFrame(index=[data_name], columns=iou_names)
+                df_dice = pd.DataFrame(index=[data_name], columns=dice_names)
 
-            # compute precision and recall scores
-            for i in range(len(self.class_names)):
-                df_precision[1, i] = precision_score(y_true, y_pred, pos_label=i)
-                df_recall[1, i] = recall_score(y_true, y_pred, pos_label=i)
-                df_iou[1, i] = jaccard_score(y_true, y_pred, pos_label=i)
-                df_dice[1, i] = f1_score(y_true, y_pred, pos_label=i)
+                # compute precision and recall scores
+                for i in range(len(self.class_names)):
+                    df_precision.at[data_name, i] = precision_score(y_true, y_pred, pos_label=i)
+                    df_recall.at[data_name, i] = recall_score(y_true, y_pred, pos_label=i)
+                    df_iou.at[data_name, i] = jaccard_score(y_true, y_pred, pos_label=i)
+                    df_dice.at[data_name, i] = f1_score(y_true, y_pred, pos_label=i)
 
-            self.metrics = pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1)
+                # bring together all columns for one data_name
+                metrics_holder.append(pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1))
+
+            # bring together all data_names
+            self.metrics = pd.concat(metrics_holder, axis=0)
 
             print("Metrics generated.")
 
-        if confusion_table:
-            table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
-            self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
+            if confusion_table:
+                table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
+                self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
-            print("Confusion table generated.")
+                print("Confusion table generated.")
 
     def view_tiles(self, n=5, idx=None, rgb=True, mask=True, pred=True, data=None):
         """Outputs an image for visually inspecting model performance. Defaults to a random selection from the test
