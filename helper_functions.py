@@ -8,7 +8,7 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, verbose=100):
+def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, verbose=20):
     """Takes a list of image arrays, and generates a Numpy array of shape (n, tile_dim, tile_dim, depth) for each member
     of the list. Note that this will, by default, cut off the right and bottom edges if tile_dim does not divide the
     mosaic dimensions evenly.
