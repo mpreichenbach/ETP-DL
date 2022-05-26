@@ -1,4 +1,4 @@
-from datasets import data_generator
+from generators import data_generator
 from helper_functions import pt_model, vec_to_label
 import numpy as np
 import os
@@ -26,10 +26,11 @@ class SemSeg():
         self.validation_path = None
         self.n_validation_examples = 0
 
-    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, class_names=("non-building", "building"), concatenate=True,
-                   dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
+    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, class_names=("non-building", "building"),
+                      concatenate=True, dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
+
             Args:
                 backbone (str): the name of the model used for backbones; see pt_model() for valid strings;
                 n_classes (int > 1): the number of classes to predict"""
@@ -48,7 +49,9 @@ class SemSeg():
         print("Model weights initialized.")
 
     def load_weights(self, path):
-        """After initializing a model, this loads pretrained weights to the upsampling path.
+        """After initializing a model, this loads pretrained weights to the upsampling path. Note that the initial_model
+        method loads pretrained weights in the downsampling path already.
+
             Args:
                 path (str): the path to the directory containing pretrained weights."""
 
@@ -60,7 +63,7 @@ class SemSeg():
 
     def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True):
         """Creates generators for training and validation data. Calls the function data_generator, which has arguments
-        arguments for data augmentation (flipping and rotating) not included here.
+        for data augmentation (flipping and rotating) not included here.
 
         Args:
             train_path (str): the path to the training data, should have 'rgb' and 'masks' subfolders;
@@ -108,6 +111,7 @@ class SemSeg():
     def train_model(self, epochs, save_path=None, monitor='val_loss', lr_factor=0.2, lr_patience=50,
                     my_callbacks=[], verbose=1):
         """Fits the model with options for weight-saving, learning rate reduction, csv-logging, and other callbacks.
+
             Args:
                 epochs (int): the number of epochs to train the model for;
                 save_path (str): the directory in which to save weights of the best model (based on val_loss);
@@ -156,7 +160,6 @@ class Metrics():
         self.metrics = {}
         self.confusion_tables = {}
 
-
     def load_data(self):
         """Loads the test Numpy arrays into a dictionary, with names as their keys."""
 
@@ -187,7 +190,7 @@ class Metrics():
 
         print("Finished inference on test data.")
 
-    def generate_metrics(self, metrics=True, single_metrics_table=True, confusion_table=True):
+    def generate_metrics(self, metrics=True, confusion_table=True):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -247,23 +250,23 @@ class Metrics():
 
                 print("Confusion table generated.")
 
-    def view_tiles(self, n=5, idx=None, rgb=True, mask=True, pred=True, data=None):
-        """Outputs an image for visually inspecting model performance. Defaults to a random selection from the test
-        data, unless a tuple (RGB, masks) of Numpy arrays is passed in data.
-
-        Args:
-            n (int): number of examples to show (number of rows in the image);
-            idx (list): a vector of indices in the test set;
-            rgb (boolean): whether to include RGB imagery in the display;
-            mask (boolean): whether to include masks in the display;
-            pred (boolean): whether to include predictions in the display;
-            data (tuple): a tuple (RGB, masks) of numpy arrays to draw from."""
-
-        if idx is None and data is not None:
-            raise Exception("Specify indices to display from the data.")
-
-        if idx is not None and data is None:
-            raise Exception("Include a tuple (RGB, masks) of data to draw from.")
-
-        ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
+    # def view_tiles(self, n=5, idx=None, rgb=True, mask=True, pred=True, data=None):
+    #     """Outputs an image for visually inspecting model performance. Defaults to a random selection from the test
+    #     data, unless a tuple (RGB, masks) of Numpy arrays is passed in data.
+    #
+    #     Args:
+    #         n (int): number of examples to show (number of rows in the image);
+    #         idx (list): a vector of indices in the test set;
+    #         rgb (boolean): whether to include RGB imagery in the display;
+    #         mask (boolean): whether to include masks in the display;
+    #         pred (boolean): whether to include predictions in the display;
+    #         data (tuple): a tuple (RGB, masks) of numpy arrays to draw from."""
+    #
+    #     if idx is None and data is not None:
+    #         raise Exception("Specify indices to display from the data.")
+    #
+    #     if idx is not None and data is None:
+    #         raise Exception("Include a tuple (RGB, masks) of data to draw from.")
+    #
+    #     ncol = np.sum(np.where([rgb, mask, pred], 1, 0))
 

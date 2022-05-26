@@ -1,8 +1,8 @@
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from helper_functions import label_to_oh
 import os
 os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2,40).__str__()
 import cv2 # import after setting OPENCV_IO_MAX_IMAGE_PIXELS
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from helper_functions import label_to_oh
 import numpy as np
 
 
@@ -55,8 +55,8 @@ def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot
 
             yield x_batch, y_batch
 
-
-def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, seed=1):
+# this does not allow many preprocessing functions (specifically, no one-hot encodings)
+def keras_dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_flip=False, seed=1):
 
     """Creates a pair of iterators which will transform the images/masks in identical ways.
 
@@ -71,21 +71,13 @@ def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_
         h_flip (bool): whether to perform a flip over the vertical axis (unnecessary when rotation, v_flip=True,
         seed (int): the random seed to set for transformations."""
 
-    # add preprocessing steps here
-    def preprocess(x):
-        x = rotate(x) if rot8 else x
-
-        return x
-
     image_datagen = ImageDataGenerator(horizontal_flip=h_flip,
                                        # if you use preprocessing layers in a model, you likely don't need to rescale
                                        # rescale=1/255.0,
-                                       vertical_flip=v_flip,
-                                       preprocessing_function=preprocess)
+                                       vertical_flip=v_flip)
 
     mask_datagen = ImageDataGenerator(horizontal_flip=h_flip,
-                                      vertical_flip=v_flip,
-                                      preprocessing_function=preprocess)
+                                      vertical_flip=v_flip)
 
     image_generator = image_datagen.flow_from_directory(rgb_path,
                                                         target_size=(dim, dim),
@@ -109,5 +101,3 @@ def dataset_gen(dim, batch_size, rgb_path, mask_path, rot8=True, v_flip=True, h_
 
     for x, y in zip_gen:
         yield x, y
-
-
