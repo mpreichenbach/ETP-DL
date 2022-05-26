@@ -1,3 +1,1 @@
-The Papers folder contains relevant papers on CNN's, semantic segmentation, and remote sensing.
-
-The Scripts folder contains scripts which input data, perform data augmentation, train various neural networks, and analyze their performance.
+The classes for model creation, training, and testing are in SemSeg_classes.py; data generators are in generators.py, and custom loss functions are in losses.py.
