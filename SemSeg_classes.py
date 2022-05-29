@@ -26,8 +26,8 @@ class SemSeg():
         self.validation_path = None
         self.n_validation_examples = 0
 
-    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, class_names=("non-building", "building"),
-                      concatenate=True, dropout=0.2, optimizer='Adam', loss='categorical_crossentropy'):
+    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, concatenate=True, dropout=0.2,
+                      optimizer='Adam', loss='categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
 
@@ -44,7 +44,6 @@ class SemSeg():
                               loss=loss)
 
         self.n_classes = n_classes
-        self.class_names = class_names
 
         print("Model weights initialized.")
 
@@ -249,4 +248,3 @@ class Metrics():
                 self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
                 print("Confusion table generated.")
-
