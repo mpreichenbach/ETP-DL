@@ -5,6 +5,7 @@ import os
 import pandas as pd
 from sklearn.metrics import jaccard_score, recall_score, precision_score, f1_score, confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
+import time
 
 class SemSeg():
     def __init__(self):
@@ -153,9 +154,8 @@ class Metrics():
         self.data_path = "D:/ETP Data/Project Inria/Test/"
         self.model = None
         self.test_data = {}
-        self.test_names = ["bloomington", "san_francisco"]
+        self.test_names = ["bellingham", "san_francisco"]
         self.class_names = ["not-building", "building"]
-        self.predicted_data = {}
         self.metrics = {}
         self.confusion_tables = {}
 
@@ -166,11 +166,16 @@ class Metrics():
             rgb = np.load(self.data_path + data_name + "_rgb.npy")
             mask = np.load(self.data_path + data_name + "_masks.npy")
 
-            self.test_data[data_name] = [rgb, mask]
+            # make sure that number of expected classes matches the number in the loaded mask array
+            if len(np.unique(mask)) == len(self.class_names):
+                self.test_data[data_name] = [rgb, mask]
+            else:
+                raise Exception("Mismatch between number of class names, and number of classes present in the test " +
+                                "data.")
 
         print("Finished loading test data.")
 
-    def predict_test_data(self, batch_size=8, verbose=1):
+    def predict(self, batch_size=8, verbose=1):
         """Uses the initialized model to do inference on the test data named in self.test_names.
 
         Args:
@@ -189,7 +194,7 @@ class Metrics():
 
         print("Finished inference on test data.")
 
-    def generate_metrics(self, metrics=True, confusion_table=True):
+    def generate(self, metrics=True, confusion_table=True, verbose=1):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -207,26 +212,24 @@ class Metrics():
             else:
                 raise Exception("Run predict_test_data before generating_metrics.")
 
-        # make sure that that correct number of classes actually exists in the test data
-        if len(self.class_names) == len(np.unique(self.test_data[1])):
-            precision_names = [name + " precision" for name in self.class_names]
-            recall_names = [name + " recall" for name in self.class_names]
-            iou_names = [name + "IoU Score" for name in self.class_names]
-            dice_names = [name + "IoU Score" for name in self.class_names]
-        else:
-            raise Exception("Mismatch between number of class names, and number of classes present in the test data.")
+        # define metric names for column headers
+        precision_names = [name + " precision" for name in self.class_names]
+        recall_names = [name + " recall" for name in self.class_names]
+        iou_names = [name + "IoU Score" for name in self.class_names]
+        dice_names = [name + "IoU Score" for name in self.class_names]
 
         # generate metrics
-        metrics_holder = []
         for data_name in self.test_names:
             y_true = self.test_data[data_name][1].flatten()
             y_pred = self.test_data[data_name][2].flatten()
 
             if metrics:
-                df_precision = pd.DataFrame(index=[data_name], columns=precision_names)
-                df_recall = pd.DataFrame(index=[data_name], columns=recall_names)
-                df_iou = pd.DataFrame(index=[data_name], columns=iou_names)
-                df_dice = pd.DataFrame(index=[data_name], columns=dice_names)
+                tic = time.perf_counter()
+
+                df_precision = pd.DataFrame(index=self.class_names, columns=precision_names)
+                df_recall = pd.DataFrame(index=self.class_names, columns=recall_names)
+                df_iou = pd.DataFrame(index=self.class_names, columns=iou_names)
+                df_dice = pd.DataFrame(index=self.class_names, columns=dice_names)
 
                 # compute precision and recall scores
                 for i in range(len(self.class_names)):
@@ -236,15 +239,21 @@ class Metrics():
                     df_dice.at[data_name, i] = f1_score(y_true, y_pred, pos_label=i)
 
                 # bring together all columns for one data_name
-                metrics_holder.append(pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1))
+                self.metrics = pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1)
 
-            # bring together all data_names
-            self.metrics = pd.concat(metrics_holder, axis=0)
-
-            print("Metrics generated.")
+                toc = time.perf_counter()
+                metrics_time = round(toc - tic, 2)
+                if verbose:
+                    print("Metrics for " + data_name + " generated in " + str(metrics_time) + " seconds.")
 
             if confusion_table:
+                tic = time.perf_counter()
                 table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
-                self.confusion_table = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
+                self.confusion_tables[data_name] = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
-                print("Confusion table generated.")
+                toc = time.perf_counter()
+                confusion_time = round(toc - tic, 2)
+                if verbose:
+                    print("Confusion table for " + data_name + " generated in " + str(confusion_time) + " seconds.")
+
+                self.confusion_tables[data_name] = table
