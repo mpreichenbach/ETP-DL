@@ -1,9 +1,10 @@
 from generators import data_generator
 from helper_functions import pt_model, vec_to_label
+from metric_functions import precision, recall, jaccard, f1
 import numpy as np
 import os
 import pandas as pd
-from sklearn.metrics import jaccard_score, recall_score, precision_score, f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 import time
 
@@ -233,10 +234,10 @@ class Metrics():
 
                 # compute precision and recall scores
                 for i in range(len(self.class_names)):
-                    df_precision.at[data_name, i] = precision_score(y_true, y_pred, pos_label=i)
-                    df_recall.at[data_name, i] = recall_score(y_true, y_pred, pos_label=i)
-                    df_iou.at[data_name, i] = jaccard_score(y_true, y_pred, pos_label=i)
-                    df_dice.at[data_name, i] = f1_score(y_true, y_pred, pos_label=i)
+                    df_precision.at[data_name, i] = precision(y_true, y_pred, pos_label=i)
+                    df_recall.at[data_name, i] = recall(y_true, y_pred, pos_label=i)
+                    df_iou.at[data_name, i] = jaccard(y_true, y_pred, pos_label=i)
+                    df_dice.at[data_name, i] = f1(y_true, y_pred, pos_label=i)
 
                 # bring together all columns for one data_name
                 self.metrics = pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1)

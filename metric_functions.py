@@ -42,7 +42,7 @@ def jaccard(y_true, y_pred, pos_label):
 
     return tp / (tp + fp + fn)
 
-def f1_score(y_true, y_pred, pos_label):
+def f1(y_true, y_pred, pos_label):
     tp = true_positives(y_true, y_pred, pos_label)
     fp = false_positives(y_true, y_pred, pos_label)
     fn = false_negatives(y_true, y_pred, pos_label)
