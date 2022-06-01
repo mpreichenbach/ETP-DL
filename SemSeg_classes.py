@@ -160,12 +160,16 @@ class Metrics():
         self.metrics = {}
         self.confusion_tables = {}
 
-    def load_data(self):
+    def load_data(self, n=None):
         """Loads the test Numpy arrays into a dictionary, with names as their keys."""
 
         for data_name in self.test_names:
-            rgb = np.load(self.data_path + data_name + "_rgb.npy")
-            mask = np.load(self.data_path + data_name + "_masks.npy")
+            if n is None:
+                rgb = np.load(self.data_path + data_name + "_rgb.npy")
+                mask = np.load(self.data_path + data_name + "_masks.npy")
+            else:
+                rgb = np.load(self.data_path + data_name + "_rgb.npy")[0:n]
+                mask = np.load(self.data_path + data_name + "_masks.npy")[0:n]
 
             # make sure that number of expected classes matches the number in the loaded mask array
             if len(np.unique(mask)) == len(self.class_names):
@@ -195,7 +199,7 @@ class Metrics():
 
         print("Finished inference on test data.")
 
-    def generate(self, metrics=True, confusion_table=True, verbose=1):
+    def generate(self, verbose=1):
         """Generates performance metrics for the loaded model on the test data, which must be loaded manually into the
         test_data attribute.
 
@@ -216,45 +220,46 @@ class Metrics():
         # define metric names for column headers
         precision_names = [name + " precision" for name in self.class_names]
         recall_names = [name + " recall" for name in self.class_names]
-        iou_names = [name + "IoU Score" for name in self.class_names]
-        dice_names = [name + "IoU Score" for name in self.class_names]
+        jaccard_names = [name + " Jaccard Score" for name in self.class_names]
+        f1_names = [name + "  F1 Score" for name in self.class_names]
 
-        # generate metrics
+        # define dataframes to hold appropriate metrics
+        df_precision = pd.DataFrame(index=self.test_names, columns=precision_names)
+        df_recall = pd.DataFrame(index=self.test_names, columns=recall_names)
+        df_jaccard = pd.DataFrame(index=self.test_names, columns=jaccard_names)
+        df_f1 = pd.DataFrame(index=self.test_names, columns=f1_names)
+
+        # compute metrics
         for data_name in self.test_names:
-            y_true = self.test_data[data_name][1].flatten()
-            y_pred = self.test_data[data_name][2].flatten()
+            tic = time.perf_counter()
 
-            if metrics:
-                tic = time.perf_counter()
+            y_true = self.test_data[data_name][1]
+            y_pred = self.test_data[data_name][2]
 
-                df_precision = pd.DataFrame(index=self.class_names, columns=precision_names)
-                df_recall = pd.DataFrame(index=self.class_names, columns=recall_names)
-                df_iou = pd.DataFrame(index=self.class_names, columns=iou_names)
-                df_dice = pd.DataFrame(index=self.class_names, columns=dice_names)
+            for i in range(len(self.class_names)):
+                df_precision.loc[data_name, precision_names[i]] = precision(y_true, y_pred, pos_label=i)
+                df_recall.loc[data_name, recall_names[i]] = recall(y_true, y_pred, pos_label=i)
+                df_jaccard.loc[data_name, jaccard_names[i]] = jaccard(y_true, y_pred, pos_label=i)
+                df_f1.loc[data_name, f1_names[i]] = f1(y_true, y_pred, pos_label=i)
 
-                # compute precision and recall scores
-                for i in range(len(self.class_names)):
-                    df_precision.at[data_name, i] = precision(y_true, y_pred, pos_label=i)
-                    df_recall.at[data_name, i] = recall(y_true, y_pred, pos_label=i)
-                    df_iou.at[data_name, i] = jaccard(y_true, y_pred, pos_label=i)
-                    df_dice.at[data_name, i] = f1(y_true, y_pred, pos_label=i)
+            # bring together all columns for one data_name
+            self.metrics = pd.concat([df_precision, df_recall, df_jaccard, df_f1], axis=1)
 
-                # bring together all columns for one data_name
-                self.metrics = pd.concat([df_precision, df_recall, df_iou, df_dice], axis=1)
+            toc = time.perf_counter()
+            metrics_time = round(toc - tic, 2)
 
-                toc = time.perf_counter()
-                metrics_time = round(toc - tic, 2)
-                if verbose:
-                    print("Metrics for " + data_name + " generated in " + str(metrics_time) + " seconds.")
+            if verbose:
+                print("Metrics for " + data_name + " generated in " + str(metrics_time) + " seconds.")
 
-            if confusion_table:
-                tic = time.perf_counter()
-                table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true').round(2)
-                self.confusion_tables[data_name] = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
+        # generate confusion tables
+            tic = time.perf_counter()
 
-                toc = time.perf_counter()
-                confusion_time = round(toc - tic, 2)
-                if verbose:
-                    print("Confusion table for " + data_name + " generated in " + str(confusion_time) + " seconds.")
+            table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')
+            self.confusion_tables[data_name] = pd.DataFrame(table, index=self.class_names, columns=self.class_names)
 
-                self.confusion_tables[data_name] = table
+            toc = time.perf_counter()
+            confusion_time = round(toc - tic, 2)
+            if verbose:
+                print("Confusion table for " + data_name + " generated in " + str(confusion_time) + " seconds.")
+
+            self.confusion_tables[data_name] = table
