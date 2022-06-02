@@ -116,7 +116,7 @@ class SemSeg():
             Args:
                 epochs (int): the number of epochs to train the model for;
                 save_path (str): the directory in which to save weights of the best model (based on val_loss);
-                lr_monitor (str): one of 'val_loss' or 'loss';
+                monitor (str): one of 'val_loss' or 'loss';
                 lr_factor (0 < float < 1): the factor by which to reduce the learning rate;
                 lr_patience (int): the number of epochs to elapse before reducing the learning rate;
                 verbose (0, 1, 2): the level of verbosity for fitting (see the Keras model.fit() method).)"""
@@ -139,7 +139,10 @@ class SemSeg():
 
         # calculate the number of steps_per_epoch to exhaust the training/validation generators
         steps_per_epoch = int(self.n_training_examples / self.batch_size) + 1
-        validation_steps = int(self.n_validation_examples / self.batch_size) + 1
+        if self.validation_data is None:
+            validation_steps=None
+        else:
+            validation_steps = int(self.n_validation_examples / self.batch_size) + 1
 
         self.model.fit(self.training_data,
                        epochs=epochs,
