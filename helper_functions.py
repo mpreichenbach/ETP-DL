@@ -1,3 +1,6 @@
+import os
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2, 40).__str__()
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
@@ -8,7 +11,9 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, verbose=20):
+
+def mosaics2tiles(rgb, mask, tile_dim, require_labels=(0, 1), drop_nodata_tiles=True,
+                 rgb_save_path=None, mask_save_path=None, dtype=np.uint8, verbose=20):
     """Takes a list of image arrays, and generates a Numpy array of shape (n, tile_dim, tile_dim, depth) for each member
     of the list. Note that this will, by default, cut off the right and bottom edges if tile_dim does not divide the
     mosaic dimensions evenly.
@@ -20,9 +25,21 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
         drop_nodata_tiles (bool): whether to ignore tiles which have a 0 in each depth dimension;
         verbose (int): the number of generated tiles after which to print a progress report; 0 for no report."""
 
+    # when labels are stored as 'binary', cv2 will import 1 as 255; this corrects for that
+    if 255 in np.unique(mask):
+        mask = mask / 255
+        mask = mask.astype(dtype=dtype)
+
+    require_labels = set(require_labels)
+    mosaic_list = [rgb, mask]
+
+    # check that both or neither save paths are specified
+    if type(rgb_save_path) != type(mask_save_path):
+        raise Exception("Both save path arguments must be either None or strings.")
+
     # check that relevant dimensions of all arrays match
     shape_list = []
-    for arr in mosaic_list:
+    for arr in [rgb, mask]:
         if len(arr.shape) > 2:
             shape_list.append(arr.shape[0:-1])
         else:
@@ -48,9 +65,14 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
             # We assume nodata pixels are 0 for each depth dimension; this checks whether that's true anywhere in the
             # tile, and whether the labels have only one value; if all this is true, the loop moves to the next tile.
             depth_sum = np.sum(imagery_tile, axis=-1)
-            if drop_nodata_tiles and 0 in np.unique(depth_sum) or len(np.unique(mask_tile)) == 1:
+            if drop_nodata_tiles and 0 in np.unique(depth_sum) or not require_labels.issubset(np.unique(mask_tile)):
                 continue
             else:
+                if rgb_save_path is not None:
+                    cv2.imwrite(rgb_save_path + "_" + str(len(imagery_tiles)) + ".png", imagery_tile)
+                if mask_save_path is not None:
+                    cv2.imwrite(mask_save_path + "_" + str(len(mask_tiles)) + ".png", mask_tile)
+
                 # reshape to allow easy concatenate later
                 imagery_tile = np.expand_dims(imagery_tile, 0)
                 mask_tile = np.expand_dims(mask_tile, 0)
@@ -63,10 +85,12 @@ def mosaic2tiles(mosaic_list, tile_dim, dtype=np.uint8, drop_nodata_tiles=True, 
                 max_tiles = int(height * width / tile_dim ** 2)
                 print("Out of a maximum of " + str(max_tiles) + ", " + str(n_tiles) + " complete.")
 
-    rgb_tile_array = np.concatenate(imagery_tiles, axis=0, dtype=dtype)
-    label_tile_array = np.concatenate(mask_tiles, axis=0, dtype=dtype)
-
-    return rgb_tile_array, label_tile_array
+    if rgb_save_path is None and mask_save_path is None:
+        rgb_tile_array = np.concatenate(imagery_tiles, axis=0, dtype=dtype)
+        label_tile_array = np.concatenate(mask_tiles, axis=0, dtype=dtype)
+        return rgb_tile_array, label_tile_array
+    else:
+        print("Tile saving complete.")
 
 
 def reduce_classes(array, keep_labels=None):
