@@ -158,9 +158,10 @@ class Metrics():
         self.data_path = "D:/ETP Data/Project Inria/Test/"
         self.model = None
         self.test_data = {}
+        self.predicted_data = {}
         self.test_names = ["bellingham", "san_francisco"]
         self.class_names = ["not-building", "building"]
-        self.metrics = {}
+        self.metrics = pd.DataFrame()
         self.confusion_tables = {}
 
     def load_data(self, n=None):
@@ -198,7 +199,7 @@ class Metrics():
             print("Performing inference on test dataset " + data_name + ".")
             pred = vec_to_label(self.model.predict(rgb, batch_size=batch_size, verbose=verbose))
 
-            self.test_data[data_name].append(pred)
+            self.predicted_data[data_name] = pred
 
         print("Finished inference on test data.")
 
@@ -211,14 +212,8 @@ class Metrics():
             confusion_table (bool): whether to generate a confusion table."""
 
         # make sure that predicted data has been generated
-        shape_dim_list = []
-        for data_name in self.test_names:
-            dataset = self.test_data[data_name]
-            shape_dim_list.append(len(dataset))
-            if np.unique(shape_dim_list).tolist().pop() == 3:
-                continue
-            else:
-                raise Exception("Run predict_test_data before generating_metrics.")
+        if self.predicted_data == {}:
+            raise Exception("Run predict_test_data before generating_metrics.")
 
         # define metric names for column headers
         precision_names = [name + " precision" for name in self.class_names]
@@ -237,7 +232,7 @@ class Metrics():
             tic = time.perf_counter()
 
             y_true = self.test_data[data_name][1]
-            y_pred = self.test_data[data_name][2]
+            y_pred = self.predicted_data[data_name]
 
             for i in range(len(self.class_names)):
                 df_precision.loc[data_name, precision_names[i]] = precision(y_true, y_pred, pos_label=i)
@@ -254,7 +249,7 @@ class Metrics():
             if verbose:
                 print("Metrics for " + data_name + " generated in " + str(metrics_time) + " seconds.")
 
-        # generate confusion tables
+            # generate confusion tables
             tic = time.perf_counter()
 
             table = confusion_matrix(y_true.flatten(), y_pred.flatten(), normalize='true')
@@ -264,5 +259,3 @@ class Metrics():
             confusion_time = round(toc - tic, 2)
             if verbose:
                 print("Confusion table for " + data_name + " generated in " + str(confusion_time) + " seconds.")
-
-            self.confusion_tables[data_name] = table

@@ -11,7 +11,6 @@ from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dro
 import time
 
 
-
 def mosaics2tiles(rgb, mask, tile_dim, require_labels=(0, 1), drop_nodata_tiles=True,
                  rgb_save_path=None, mask_save_path=None, dtype=np.uint8, verbose=20):
     """Takes a list of image arrays, and generates a Numpy array of shape (n, tile_dim, tile_dim, depth) for each member
@@ -559,7 +558,7 @@ def tile_apply(image, model, tile_dim, output_type=np.uint8):
 
     arr = np.asarray(image)
 
-    holder = np.zeros(arr.shape[0:2] + (model.output.shape[-1],))
+    holder = np.zeros(arr.shape[0:2])
 
     nrows = int(arr.shape[0] / tile_dim)
     ncols = int(arr.shape[1] / tile_dim)
@@ -570,7 +569,7 @@ def tile_apply(image, model, tile_dim, output_type=np.uint8):
     for i in range(nrows):
         for j in range(ncols):
             tile = arr[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))]
-            pred = model.predict(tile.reshape((1,) + tile.shape))[0]
+            pred = vec_to_label(model.predict(tile.reshape((1,) + tile.shape))[0])
 
             holder[(tile_dim * i):(tile_dim * (i + 1)), (tile_dim * j):(tile_dim * (j + 1))] = pred
     toc = time.perf_counter()
