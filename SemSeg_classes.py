@@ -159,7 +159,7 @@ class Metrics():
         self.model = None
         self.test_data = {}
         self.predicted_data = {}
-        self.test_names = ["bellingham", "san_francisco"]
+        self.test_names = ["bellingham", "bloomington", "san_francisco"]
         self.class_names = ["not-building", "building"]
         self.metrics = pd.DataFrame()
         self.confusion_tables = {}
@@ -172,7 +172,7 @@ class Metrics():
                 rgb = np.load(self.data_path + data_name + "_rgb.npy")
                 mask = np.load(self.data_path + data_name + "_masks.npy")
             else:
-                rgb = np.load(self.data_path + data_name + "_rgb.npy")[0:n]
+                rgb = np .load(self.data_path + data_name + "_rgb.npy")[0:n]
                 mask = np.load(self.data_path + data_name + "_masks.npy")[0:n]
 
             # make sure that number of expected classes matches the number in the loaded mask array
