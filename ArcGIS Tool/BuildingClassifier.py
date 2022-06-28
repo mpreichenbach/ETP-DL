@@ -81,13 +81,6 @@ class BuildingClassifier:
 
     # this is the workhorse method for the Classify Pixels Using Deep Learning tool
     def updatePixels(self, tlc, shape, props, **pixelBlocks):
-
-        # this function converts one-hot encoded pixels to integer labels
-        def vec_to_label(oh_array):
-            output = np.argmax(oh_array, axis=-1).astype(np.uint8)
-
-            return output
-
         # obtain the input image, initialize prediction holder
         input_image = pixelBlocks['raster_pixels']
 
@@ -107,7 +100,7 @@ class BuildingClassifier:
         # initialize the prediction holder and pad the input
         ph, pw = output_padding
         padded_input = np.pad(input_image, ((0,), (ph,), (pw,)), mode='reflect')
-        padded_predictions = np.zeros(padded_input.shape, dtype=np.uint8)
+        padded_predictions = np.zeros(padded_input.shape, dtype=props['pixelType'])
 
         # run inference on tiles of padded_input, place into prediction_holder
         n_tiles_height = int(padded_input / d)
@@ -118,7 +111,7 @@ class BuildingClassifier:
             for j in range(n_tiles_width):
                 input_tile = np.expand_dims(padded_input[(d * i):(d * (i + 1)), (d + j):(d * (j + 1)), ], 0)
                 predicted_tile = np.squeeze(self.model.predict(input_tile))
-                predicted_tile = vec_to_label(predicted_tile)
+                predicted_tile = np.argmax(predicted_tile, axis=-1).astype(props['pixelType'])
 
                 padded_predictions[(d * i):(d * (i + 1)), (d + j):(d * (j + 1))] = predicted_tile
 

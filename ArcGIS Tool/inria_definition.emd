@@ -1,0 +1,21 @@
+{
+	"Framework":"TensorFlow",
+	"ModelFile":".\\vgg19_graph.pb",
+	"ModelType":"ImageClassification",
+	"ExtractBands":[0,1,2],
+	"ImageWidth":1024,
+	"ImageHeight":1024,
+	"BatchSize":1,
+	"Classes": [
+		{
+			"Value":0,
+			"Name":"Not-building",
+			"Color":[0, 0, 0],
+		},
+		{
+		    "Value":1,
+		    "Name":"Building",
+		    "Color":[255, 255, 255]
+		}
+	]
+}
