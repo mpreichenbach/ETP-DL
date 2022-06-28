@@ -6,7 +6,7 @@ from helper_functions import label_to_oh
 import numpy as np
 
 
-def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True):
+def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True, scale=1.0):
     """This is a custom generator, adapted from an example in a comment at
     https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
     want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
@@ -46,6 +46,8 @@ def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot
 
                 if one_hot:
                     mask = label_to_oh(mask, classes)
+
+                img = img * scale
 
                 x_batch.append(img)
                 y_batch.append(mask)

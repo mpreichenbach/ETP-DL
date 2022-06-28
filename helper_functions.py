@@ -155,15 +155,12 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
     # Xception
     #####
     if backbone == 'Xception':
-        input_proc = xception.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = xception.Xception(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = xception.Xception(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
-        filters = int(model_pt.output.shape[-1])
+        filters = int(down_path.output.shape[-1])
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
         filters = int(filters / 2)
@@ -190,30 +187,27 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
     # VGG16 & VGG19
     #####
     if backbone == 'VGG16':
-        input_proc = vgg16.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = vgg16.VGG16(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = vgg16.VGG16(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
-        filters = int(model_pt.output.shape[-1])
+        filters = int(down_path.output.shape[-1])
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-5].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-5].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-9].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-9].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-13].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-13].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -226,30 +220,27 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         return cnn_pt
 
     if backbone == 'VGG19':
-        input_proc = vgg19.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = vgg19.VGG19(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = vgg19.VGG19(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
-        filters = int(model_pt.output.shape[-1])
+        filters = int(down_path.output.shape[-1])
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-6].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-6].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-11].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-11].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-16].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-19].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-19].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -266,30 +257,27 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
     #####
 
     if backbone == 'ResNet50':
-        input_proc = resnet.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet.ResNet50(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet.ResNet50(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
 
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
         # I've started with half the filters as before, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 2)
+        filters = int(down_path.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-95].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-95].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-137].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-137].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-171].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-171].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -299,34 +287,31 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         cnn_pt = Model(input, output_img)
         cnn_pt.compile(optimizer=opt, loss=loss)
 
-        del model_pt
+        del down_path
 
         return cnn_pt
 
     if backbone == 'ResNet50V2':
-        input_proc = resnet_v2.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet_v2.ResNet50V2(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet_v2.ResNet50V2(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
-        # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 2)
+        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
+        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
+        filters = int(down_path.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-112].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-112].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-158].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-158].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-188].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-188].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -344,29 +329,26 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
     #####
 
     if backbone == 'ResNet101':
-        input_proc = resnet.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet.ResNet101(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet.ResNet101(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
-        # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 2)
+        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
+        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
+        filters = int(down_path.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-265].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-265].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-307].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-307].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-341].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-341].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -379,29 +361,26 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         return cnn_pt
 
     if backbone == 'ResNet101V2':
-        input_proc = resnet_v2.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet_v2.ResNet101V2(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet_v2.ResNet101V2(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
-        # I've started with half the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 2)
+        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
+        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
+        filters = int(down_path.output.shape[-1] / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-299].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-299].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-345].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-345].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-375].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-375].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -419,29 +398,26 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
     #####
 
     if backbone == 'ResNet152':
-        input_proc = resnet.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet.ResNet152(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet.ResNet152(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-33].output]) if concatenate else x
-        # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 4)
+        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
+        # I've started with 1/4 the filters as in down_path.output, because otherwise I get a GPU memory error
+        filters = int(down_path.output.shape[-1] / 4)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-395].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-395].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-477].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-477].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-511].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-511].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -454,29 +430,26 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
         return cnn_pt
 
     if backbone == 'ResNet152V2':
-        input_proc = resnet_v2.preprocess_input(input)
-        input_model = Model(input, input_proc)
-        model_pt = resnet_v2.ResNet152V2(include_top=False, input_tensor=input_model.output)
-        model_pt.trainable = False
+        down_path = resnet_v2.ResNet152V2(include_top=False, input_tensor=input)
 
-        x = model_pt.output
+        x = down_path.output
 
         # upsampling path
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-44].output]) if concatenate else x
-        # I've started with 1/4 the filters as in model_pt.output, because otherwise I get a GPU memory error
-        filters = int(model_pt.output.shape[-1] / 4)
+        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
+        # I've started with 1/4 the filters as in down_path.output, because otherwise I get a GPU memory error
+        filters = int(down_path.output.shape[-1] / 4)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-442].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-442].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-532].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-532].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, model_pt.layers[-562].output]) if concatenate else x
+        x = Concatenate(axis=-1)([x, down_path.layers[-562].output]) if concatenate else x
         filters = int(filters / 2)
         x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
         x = UpSampling2D(size=(2, 2))(x)
@@ -662,6 +635,12 @@ def unet_main_block(m, n_filters, dim=3, bn=True, do_rate=0.2):
             bn (Boolean): whether to include batch normalization
             do_rate (float): the rate to perform dropout after each convolution."""
 
+    n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
+    n = Dropout(do_rate)(n) if do_rate else n
+    n = BatchNormalization()(n) if bn else n
+    n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
+    n = Dropout(do_rate)(n) if do_rate else n
+    n = BatchNormalization()(n) if bn else n
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
