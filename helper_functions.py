@@ -221,6 +221,8 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
 
     if backbone == 'VGG19':
         down_path = vgg19.VGG19(include_top=False, input_tensor=input)
+        for i in range(len(down_path.layers)):
+            down_path.layers[i].trainable=False
 
         x = down_path.output
 
@@ -641,7 +643,7 @@ def unet_main_block(m, n_filters, dim=3, bn=True, do_rate=0.2):
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
-    n = Conv2D(n_filters, dim, activation='relu', padding='same')(m)
+    n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
