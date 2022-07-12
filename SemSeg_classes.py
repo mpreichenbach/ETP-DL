@@ -28,18 +28,19 @@ class SemSeg():
         self.validation_path = None
         self.n_validation_examples = 0
 
-    def initial_model(self, backbone="VGG19", n_filters=16, n_classes=2, concatenate=True, dropout=0.2,
-                      optimizer='Adam', loss='categorical_crossentropy'):
+    def initial_model(self,
+                      n_classes=2,
+                      concatenate=True,
+                      dropout=0.2,
+                      optimizer='Adam',
+                      loss='sparse_categorical_crossentropy'):
 
         """Initializes a model with pretrained weights in the downsampling path from 'backbone'.
 
             Args:
-                backbone (str): the name of the model used for backbones; see pt_model() for valid strings;
                 n_classes (int > 1): the number of classes to predict"""
 
-        self.model = pt_model(backbone=backbone,
-                              n_filters=n_filters,
-                              n_classes=n_classes,
+        self.model = pt_model(n_classes=n_classes,
                               concatenate=concatenate,
                               do=dropout,
                               opt=optimizer,
@@ -62,7 +63,7 @@ class SemSeg():
         self.model.load_weights(path)
         self.weight_path = path
 
-    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True, scale=1/255):
+    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=False, scale=1):
         """Creates generators for training and validation data. Calls the function data_generator, which has arguments
         for data augmentation (flipping and rotating) not included here.
 

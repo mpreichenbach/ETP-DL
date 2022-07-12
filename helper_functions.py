@@ -120,7 +120,7 @@ def reduce_classes(array, keep_labels=None):
 
     return out_array.astype(np.uint8)
 
-def pt_model(n_classes, n_filters=None, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
+def pt_model(n_classes, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.

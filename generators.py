@@ -6,7 +6,14 @@ from helper_functions import label_to_oh
 import numpy as np
 
 
-def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot=True, v_flip=True, scale=1.0):
+def data_generator(image_dir,
+                   mask_dir,
+                   batch_size,
+                   one_hot = False,
+                   classes = None,
+                   v_flip = True,
+                   rot = True,
+                   scale = 1.0):
     """This is a custom generator, adapted from an example in a comment at
     https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
     want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
@@ -20,6 +27,9 @@ def data_generator(image_dir, mask_dir, batch_size, one_hot=True, classes=2, rot
         classes (int): the number of classes in labeled imagery, only needed if one_hot=True;
         rot (bool): whether to randomly rotate loaded images;
         v_vflip (bool): whether to randomly flip images over the vertical axis."""
+
+    if one_hot and classes is None:
+        raise Exception("Number of classes must be specified when performing one-hot encoding.")
 
     list_images = os.listdir(image_dir)
     np.random.shuffle(list_images)
