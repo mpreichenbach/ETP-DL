@@ -62,7 +62,7 @@ class SemSeg():
         self.model.load_weights(path)
         self.weight_path = path
 
-    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True):
+    def load_generator(self, train_path, val_path=None, image_dim=512, batch_size=8, one_hot=True, scale=1/255):
         """Creates generators for training and validation data. Calls the function data_generator, which has arguments
         for data augmentation (flipping and rotating) not included here.
 
@@ -79,7 +79,8 @@ class SemSeg():
                                                 mask_dir=os.path.join(train_path, "masks"),
                                                 batch_size=batch_size,
                                                 classes=self.n_classes,
-                                                one_hot=one_hot)
+                                                one_hot=one_hot,
+                                                scale=scale)
             self.n_training_examples = len(os.listdir(train_path + "rgb"))
             self.training_path = train_path
             self.image_dimension = image_dim
@@ -104,7 +105,8 @@ class SemSeg():
                                                   mask_dir=os.path.join(val_path, "masks"),
                                                   batch_size=batch_size,
                                                   classes=self.n_classes,
-                                                  one_hot=one_hot)
+                                                  one_hot=one_hot,
+                                                  scale=scale)
             self.validation_path = val_path
 
             print("Training and validation data generators loaded.")

@@ -120,7 +120,7 @@ def reduce_classes(array, keep_labels=None):
 
     return out_array.astype(np.uint8)
 
-def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
+def pt_model(n_classes, n_filters=None, concatenate=True, do=0.2, opt='Adam', loss='sparse_categorical_crossentropy'):
     """Instantiates compiled tf.keras.model, with an autoencoder (Unet-like) architecture. The downsampling path is
     given by the 'backbone' argument, with the upsampling path mirroring it, but with options for batch normalization
     and dropout layers.
@@ -143,362 +143,41 @@ def pt_model(n_classes, backbone=None, n_filters=None, concatenate=True, do=0.2,
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    if backbone is None and n_filters is None:
-        raise Exception("You must specify n_filters when backbone is None.")
-
-    # testing the following line:
     input = Input(shape=(None, None, 3), dtype=tf.float32)
 
-    # input = Input(input_shape, dtype=tf.float32)
+    down_path = vgg19.VGG19(include_top=False, input_tensor=input)
+    for i in range(len(down_path.layers)):
+        down_path.layers[i].trainable=False
 
-    #####
-    # Xception
-    #####
-    if backbone == 'Xception':
-        down_path = xception.Xception(include_top=False, input_tensor=input)
+    x = down_path.output
 
-        x = down_path.output
+    # upsampling path
+    filters = int(down_path.output.shape[-1])
+    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Concatenate(axis=-1)([x, down_path.layers[-6].output]) if concatenate else x
+    filters = int(filters / 2)
+    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Concatenate(axis=-1)([x, down_path.layers[-11].output]) if concatenate else x
+    filters = int(filters / 2)
+    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
+    filters = int(filters / 2)
+    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    x = UpSampling2D(size=(2, 2))(x)
+    x = Concatenate(axis=-1)([x, down_path.layers[-19].output]) if concatenate else x
+    filters = int(filters / 2)
+    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    x = UpSampling2D(size=(2, 2))(x)
+    output = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
-        # upsampling path
-        filters = int(down_path.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
+    # compile the model with the chosen optimizer and loss functions
+    cnn_pt = Model(input, output)
+    cnn_pt.compile(optimizer=opt, loss=loss)
 
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    #####
-    # VGG16 & VGG19
-    #####
-    if backbone == 'VGG16':
-        down_path = vgg16.VGG16(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        filters = int(down_path.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-5].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-9].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-13].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    if backbone == 'VGG19':
-        down_path = vgg19.VGG19(include_top=False, input_tensor=input)
-        for i in range(len(down_path.layers)):
-            down_path.layers[i].trainable=False
-
-        x = down_path.output
-
-        # upsampling path
-        filters = int(down_path.output.shape[-1])
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-6].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-11].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-19].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    #####
-    # ResNet50 & ResNet50V2
-    #####
-
-    if backbone == 'ResNet50':
-        down_path = resnet.ResNet50(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
-        # I've started with half the filters as before, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-95].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-137].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-171].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        del down_path
-
-        return cnn_pt
-
-    if backbone == 'ResNet50V2':
-        down_path = resnet_v2.ResNet50V2(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
-        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-112].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-158].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-188].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    #####
-    # ResNet101 & ResNet101V2
-    # During training, use a batch size of 8; 16 gives a GPU memory error
-    #####
-
-    if backbone == 'ResNet101':
-        down_path = resnet.ResNet101(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
-        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-265].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-307].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-341].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    if backbone == 'ResNet101V2':
-        down_path = resnet_v2.ResNet101V2(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
-        # I've started with half the filters as in down_path.output, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-299].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-345].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-375].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    #####
-    # ResNet152 & ResNet152V2
-    # During training, use a batch size of 8, 16 gives a GPU memory error
-    #####
-
-    if backbone == 'ResNet152':
-        down_path = resnet.ResNet152(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-33].output]) if concatenate else x
-        # I've started with 1/4 the filters as in down_path.output, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 4)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-395].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-477].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-511].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    if backbone == 'ResNet152V2':
-        down_path = resnet_v2.ResNet152V2(include_top=False, input_tensor=input)
-
-        x = down_path.output
-
-        # upsampling path
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-44].output]) if concatenate else x
-        # I've started with 1/4 the filters as in down_path.output, because otherwise I get a GPU memory error
-        filters = int(down_path.output.shape[-1] / 4)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-442].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-532].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x, down_path.layers[-562].output]) if concatenate else x
-        filters = int(filters / 2)
-        x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
-        x = UpSampling2D(size=(2, 2))(x)
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
-
-    if backbone is None:
-        # downsampling path
-        x1 = unet_main_block(input, n_filters=n_filters, do_rate=do)
-        x = MaxPooling2D(padding='same')(x1)
-        n_filters *= 2
-        x2 = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x = MaxPooling2D(padding='same')(x2)
-        n_filters *= 2
-        x3 = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x = MaxPooling2D(padding='same')(x3)
-        n_filters *= 2
-        x4 = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x = MaxPooling2D(padding='same')(x4)
-
-        # upsamping path
-        x5 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x5, x4]) if concatenate else x5
-        n_filters = int(n_filters / 2)
-        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x6 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x6, x3]) if concatenate else x6
-        n_filters = int(n_filters / 2)
-        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x7 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x7, x2]) if concatenate else x7
-        n_filters = int(n_filters / 2)
-        x = unet_main_block(x, n_filters=n_filters, do_rate=do)
-        x8 = UpSampling2D(size=(2, 2))(x)
-        x = Concatenate(axis=-1)([x8, x1]) if concatenate else x8
-        output_img = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
-
-        # compile the model with the chosen optimizer and loss functions
-        cnn_pt = Model(input, output_img)
-        cnn_pt.compile(optimizer=opt, loss=loss)
-
-        return cnn_pt
+    return cnn_pt
 
 def vec_to_label(oh_array):
     output = np.argmax(oh_array, axis=-1).astype(np.uint8)
@@ -643,10 +322,5 @@ def unet_main_block(m, n_filters, dim=3, bn=True, do_rate=0.2):
     n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
     n = Dropout(do_rate)(n) if do_rate else n
     n = BatchNormalization()(n) if bn else n
-    n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
-    n = Dropout(do_rate)(n) if do_rate else n
-    n = BatchNormalization()(n) if bn else n
-    n = Conv2D(n_filters, dim, activation='relu', padding='same')(n)
-    n = Dropout(do_rate)(n) if do_rate else n
-    n = BatchNormalization()(n) if bn else n
+
     return n
