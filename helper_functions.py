@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import xception, vgg16, vgg19, resnet, resnet_v2
+from tensorflow.keras.applications import vgg19
 from tensorflow.keras.layers import BatchNormalization, Concatenate, Conv2D, Dropout, Input, MaxPooling2D, UpSampling2D
 import time
 
@@ -143,38 +143,65 @@ def pt_model(n_classes, concatenate=True, do=0.2, opt='Adam', loss='sparse_categ
        opt (str): the optimizer to use when compiling the model.
        loss (str): the loss function to use when compiling the model."""
 
-    input = Input(shape=(None, None, 3), dtype=tf.float32)
+    in_layer = Input(shape=(None, None, 3), dtype=tf.float32)
 
-    down_path = vgg19.VGG19(include_top=False, input_tensor=input)
-    for i in range(len(down_path.layers)):
-        down_path.layers[i].trainable=False
+    # down_path = vgg19.VGG19(include_top=False, input_tensor=input)
+    # for i in range(len(down_path.layers)):
+    #     down_path.layers[i].trainable = False
 
-    x = down_path.output
+    # input_proc = vgg19.preprocess_input(in_layer)
+    # input_model = Model(in_layer, input_proc)
+    # down_path = vgg19.VGG19(include_top=False, input_tensor=input_model.output)
+    # down_path.trainable = False
+    #
+    # x = down_path.output
+
+    x = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(in_layer)
+    x = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    max_1 = MaxPooling2D(padding='same')(x)
+    x = Conv2D(128, kernel_size=(3, 3), activation='relu', padding='same')(max_1)
+    x = Conv2D(128, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    max_2 = MaxPooling2D(padding='same')(x)
+    x = Conv2D(256, kernel_size=(3, 3), activation='relu', padding='same')(max_2)
+    x = Conv2D(256, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(256, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(256, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    max_3 = MaxPooling2D(padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(max_3)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    max_4 = MaxPooling2D(padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(max_4)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, kernel_size=(3, 3), activation='relu', padding='same')(x)
+    max_5 = MaxPooling2D(padding='same')(x)
 
     # upsampling path
-    filters = int(down_path.output.shape[-1])
-    x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
+    filters = int(max_5.shape[-1])
+    x = unet_main_block(max_5, n_filters=filters, dim=3, bn=True, do_rate=do)
     x = UpSampling2D(size=(2, 2))(x)
-    x = Concatenate(axis=-1)([x, down_path.layers[-6].output]) if concatenate else x
+    x = Concatenate(axis=-1)([x, max_4]) if concatenate else x
     filters = int(filters / 2)
     x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
     x = UpSampling2D(size=(2, 2))(x)
-    x = Concatenate(axis=-1)([x, down_path.layers[-11].output]) if concatenate else x
+    x = Concatenate(axis=-1)([x, max_3]) if concatenate else x
     filters = int(filters / 2)
     x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
     x = UpSampling2D(size=(2, 2))(x)
-    x = Concatenate(axis=-1)([x, down_path.layers[-16].output]) if concatenate else x
+    x = Concatenate(axis=-1)([x, max_2]) if concatenate else x
     filters = int(filters / 2)
     x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
     x = UpSampling2D(size=(2, 2))(x)
-    x = Concatenate(axis=-1)([x, down_path.layers[-19].output]) if concatenate else x
+    x = Concatenate(axis=-1)([x, max_1]) if concatenate else x
     filters = int(filters / 2)
     x = unet_main_block(x, n_filters=filters, dim=3, bn=True, do_rate=do)
     x = UpSampling2D(size=(2, 2))(x)
     output = Conv2D(n_classes, 1, padding='same', activation='softmax')(x)
 
     # compile the model with the chosen optimizer and loss functions
-    cnn_pt = Model(input, output)
+    cnn_pt = Model(in_layer, output)
     cnn_pt.compile(optimizer=opt, loss=loss)
 
     return cnn_pt

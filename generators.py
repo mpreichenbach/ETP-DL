@@ -9,11 +9,11 @@ import numpy as np
 def data_generator(image_dir,
                    mask_dir,
                    batch_size,
-                   one_hot = False,
-                   classes = None,
-                   v_flip = True,
-                   rot = True,
-                   scale = 1.0):
+                   one_hot=False,
+                   classes=None,
+                   v_flip=True,
+                   rot=True,
+                   scale=1/255):
     """This is a custom generator, adapted from an example in a comment at
     https://github.com/keras-team/keras/issues/3059. By editing this function, you can include any preprocessing you
     want. For example, the Keras ImageDataGenerator class does not allow one-hot encoding of labeled imagery, but the
@@ -26,7 +26,8 @@ def data_generator(image_dir,
         one_hot (bool): whether to perform a one-hot encoding on the labeled images;
         classes (int): the number of classes in labeled imagery, only needed if one_hot=True;
         rot (bool): whether to randomly rotate loaded images;
-        v_vflip (bool): whether to randomly flip images over the vertical axis."""
+        v_flip (bool): whether to randomly flip images over the vertical axis;
+        scale (float): the value to multiply input pixels by."""
 
     if one_hot and classes is None:
         raise Exception("Number of classes must be specified when performing one-hot encoding.")
