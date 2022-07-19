@@ -1,9 +1,9 @@
 from os import environ
-# this line overrides the pixel limit that opencv (aka cv2) imposes on loaded images
+# this line overrides the pixel limit that opencv (aka cv2) imposes on loaded images, and needs to be before tensorflow
 environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2, 40).__str__()
 from tensorflow.keras.models import load_model
-from cv2 import imread, IMREAD_GRAYSCALE, IMREAD_COLOR, imwrite
-from numpy import argmax, expand_dims, moveaxis, pad, squeeze, zeros
+from cv2 import imread, IMREAD_COLOR, imwrite
+from numpy import argmax, expand_dims, pad, squeeze, zeros
 
 
 class BuildingClassifier:
@@ -38,7 +38,7 @@ class BuildingClassifier:
         input_image = self.rgb_raster
 
         # compute the appropriate padding amounts for the inference step.
-        output_padding = [0, 0]
+        output_padding = [(0, 0), (0, 0)]
         input_dims = self.raster_size
 
         for i in range(len(input_dims)):
@@ -46,28 +46,33 @@ class BuildingClassifier:
                 continue
             else:
                 dim = input_dims[i]
-                output_padding[i] = int(0.5 * ((window_size * (int(dim / window_size) + 1)) - dim))
+                exact_pad = 0.5 * ((window_size * (int(dim / window_size) + 1)) - dim)
+                # if the difference between the padded and initial dimensions is odd, then exact_pad will have a nonzero
+                # decimal part. In that case, we have to pad by different values on each side.
+                if int(exact_pad) < exact_pad:
+                    output_padding[i] = (int(exact_pad), int(exact_pad) + 1)
+                else:
+                    output_padding[i] = (int(exact_pad), int(exact_pad))
 
         # define the number of pixels to pad the input by
-        height_pad, width_pad = output_padding
+        height_pads, width_pads = output_padding
 
         # pad with reflected values from the image
-        padded_input = pad(input_image, ((0,), (height_pad,), (width_pad,)), mode='reflect')
+        padded_input = pad(input_image, (height_pads, width_pads, (0, 0)), mode='reflect')
 
         # initialize an array to hold the predicted values
-        padded_predictions = zeros(padded_input.shape, dtype=self.pixel_type)
+        padded_predictions = zeros(padded_input.shape[0:2], dtype=self.pixel_type)
 
         # run inference on tiles of padded_input, place into prediction_holder
-        n_tiles_height = int(padded_input / window_size)
-        n_tiles_width = int(padded_input / window_size)
-        # padded_input = moveaxis(padded_input, 0, 2)
+        n_tiles_height = int(padded_input.shape[0] / window_size)
+        n_tiles_width = int(padded_input.shape[1] / window_size)
 
         # this loop does inference on only one tile at a time, and could be (easily?) parallelized
         for i in range(n_tiles_height):
             for j in range(n_tiles_width):
                 # this line gives the tile the shape (1, window_size, window_size, 3), which is necessary for inference
                 input_tile = expand_dims(padded_input[(window_size * i):(window_size * (i + 1)),
-                                                      (window_size + j):(window_size * (j + 1)), ], 0)
+                                                      (window_size * j):(window_size * (j + 1))], 0)
 
                 # this line does inference, and yields a tile of shape (window_size, window_size, 2)
                 predicted_tile = squeeze(self.model.predict(input_tile))
@@ -77,22 +82,22 @@ class BuildingClassifier:
 
                 # updates the array which holds the predicted tiles
                 padded_predictions[(window_size * i):(window_size * (i + 1)),
-                                   (window_size + j):(window_size * (j + 1))] = predicted_tile
+                                   (window_size * j):(window_size * (j + 1))] = predicted_tile
 
         # keep only the dimensions of the original input
-        self.predicted_raster = padded_predictions[height_pad:-height_pad, width_pad:-width_pad]
+        self.predicted_raster = padded_predictions[height_pads[0]:-height_pads[1], width_pads[0]:-width_pads[1]]
 
     def save_prediction(self, output_path):
-        imwrite(output_path, self.predicted_raster, IMREAD_GRAYSCALE)
+        imwrite(output_path, self.predicted_raster)
 
 
-if __name__ == "__main__":
-    rgb_path = "Test Imagery/bellingham_rgb.tif"
-    model_path = "VGG19 Inria/"
-    output_path = "Test Imagery/bellingham_pred.tif"
-
-    classifier = BuildingClassifier()
-    classifier.load_model(model_path=model_path)
-    classifier.load_rgb(rgb_path=rgb_path)
-    classifier.predict()
-    classifier.save_prediction(output_path=output_path)
+# if __name__ == "__main__":
+#     rgb_path = "Test Imagery/bellingham_rgb.tif"
+#     model_path = "VGG19 Inria/"
+#     output_path = "Test Imagery/bellingham_pred.tif"
+#
+#     classifier = BuildingClassifier()
+#     classifier.load_model(model_path=model_path)
+#     classifier.load_rgb(rgb_path=rgb_path)
+#     classifier.predict()
+#     classifier.save_prediction(output_path=output_path)
