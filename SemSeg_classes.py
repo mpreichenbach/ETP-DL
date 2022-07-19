@@ -8,7 +8,8 @@ from sklearn.metrics import confusion_matrix
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 import time
 
-class SemSeg():
+
+class SemSeg:
     def __init__(self):
         # model
         self.model = None
@@ -133,7 +134,7 @@ class SemSeg():
             my_callbacks.append(csv_callback)
 
             checkpoint_callback = ModelCheckpoint(filepath=save_path, monitor=monitor, save_best_only=True,
-                                                  save_weights_only=True, save_freq="epoch", verbose=verbose)
+                                                  save_weights_only=False, save_freq="epoch", verbose=verbose)
             my_callbacks.append(checkpoint_callback)
 
         if monitor is not None and lr_factor is not None and lr_patience is not None:
@@ -156,7 +157,7 @@ class SemSeg():
                        verbose=verbose)
 
 
-class Metrics():
+class Metrics:
     def __init__(self):
         self.data_path = "D:/ETP Data/Project Inria/Test/"
         self.model = None
