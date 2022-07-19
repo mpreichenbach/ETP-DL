@@ -91,13 +91,13 @@ class BuildingClassifier:
         imwrite(output_path, self.predicted_raster)
 
 
-# if __name__ == "__main__":
-#     rgb_path = "Test Imagery/bellingham_rgb.tif"
-#     model_path = "VGG19 Inria/"
-#     output_path = "Test Imagery/bellingham_pred.tif"
-#
-#     classifier = BuildingClassifier()
-#     classifier.load_model(model_path=model_path)
-#     classifier.load_rgb(rgb_path=rgb_path)
-#     classifier.predict()
-#     classifier.save_prediction(output_path=output_path)
+if __name__ == "__main__":
+    rgb_path = "Test Imagery/bellingham_clipped.tif"
+    model_path = "VGG19 Inria/"
+    output_path = "Example Imagery/bellingham_pred.tif"
+
+    classifier = BuildingClassifier()
+    classifier.load_model(model_path=model_path)
+    classifier.load_rgb(rgb_path=rgb_path)
+    classifier.predict()
+    classifier.save_prediction(output_path=output_path)
