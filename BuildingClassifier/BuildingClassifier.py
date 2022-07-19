@@ -63,7 +63,7 @@ class BuildingClassifier:
         # initialize an array to hold the predicted values
         padded_predictions = zeros(padded_input.shape[0:2], dtype=self.pixel_type)
 
-        # run inference on tiles of padded_input, place into prediction_holder
+        # calculate the number of tiles in each dimension
         n_tiles_height = int(padded_input.shape[0] / window_size)
         n_tiles_width = int(padded_input.shape[1] / window_size)
 
@@ -92,7 +92,7 @@ class BuildingClassifier:
 
 
 if __name__ == "__main__":
-    rgb_path = "Test Imagery/bellingham_clipped.tif"
+    rgb_path = "Example Imagery/bellingham_clipped.tif"
     model_path = "VGG19 Inria/"
     output_path = "Example Imagery/bellingham_pred.tif"
 
